@@ -14,10 +14,13 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
+        // Clear existing roles and their permissions
+        \App\Models\Role::query()->delete();
+
         $roles = [
             [
-                'name' => 'admin',
-                'label' => 'Administrator',
+                'name' => 'super_admin',
+                'label' => 'Super Administrator',
                 'color' => 'red',
                 'permissions' => [
                     'view_dashboard',
@@ -27,20 +30,39 @@ class RoleSeeder extends Seeder
                 ],
             ],
             [
-                'name' => 'moderator',
-                'label' => 'Moderator',
-                'color' => 'orange',
+                'name' => 'admin',
+                'label' => 'School Administrator',
+                'color' => 'purple',
                 'permissions' => [
                     'view_dashboard',
-                    'view_users', 'edit_users',
-                    'view_roles',
+                    'view_users', 'create_users', 'edit_users',
+                    'view_roles', 'edit_roles',
+                    'view_settings', 'edit_profile', 'change_password', 'manage_appearance',
+                ],
+            ],
+            [
+                'name' => 'teacher',
+                'label' => 'Teacher',
+                'color' => 'blue',
+                'permissions' => [
+                    'view_dashboard',
+                    'view_users', // Can view student info
                     'view_settings', 'edit_profile', 'change_password',
                 ],
             ],
             [
-                'name' => 'user',
-                'label' => 'User',
+                'name' => 'parent',
+                'label' => 'Parent',
                 'color' => 'green',
+                'permissions' => [
+                    'view_dashboard',
+                    'view_settings', 'edit_profile', 'change_password',
+                ],
+            ],
+            [
+                'name' => 'student',
+                'label' => 'Student',
+                'color' => 'orange',
                 'permissions' => [
                     'view_dashboard',
                     'view_settings', 'edit_profile', 'change_password',

@@ -13,88 +13,172 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Truncate tables in correct order (due to foreign key constraints)
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        \App\Models\Role::query()->delete();
+        User::query()->delete();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
         // Seed permissions first
         $this->call(PermissionSeeder::class);
 
         // Then seed roles
         $this->call(RoleSeeder::class);
 
-        // Create a test admin user
-        User::factory()->admin()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
+        // Get role IDs for assignment
+        $superAdminRole = \App\Models\Role::where('name', 'super_admin')->first();
+        $adminRole = \App\Models\Role::where('name', 'admin')->first();
+        $teacherRole = \App\Models\Role::where('name', 'teacher')->first();
+        $parentRole = \App\Models\Role::where('name', 'parent')->first();
+        $studentRole = \App\Models\Role::where('name', 'student')->first();
+
+        // Create Super Admin (Principal)
+        User::create([
+            'name' => 'Dr. Sarah Principal',
+            'email' => 'principal@school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $superAdminRole->id,
         ]);
 
-        // Create additional sample users
-        User::factory()->create([
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
+        // Create School Administrators
+        User::create([
+            'name' => 'Mr. John Deputy',
+            'email' => 'deputy@school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $adminRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Jane Smith',
-            'email' => 'jane@example.com',
+        User::create([
+            'name' => 'Mrs. Mary Admin',
+            'email' => 'admin@school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $adminRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Bob Johnson',
-            'email' => 'bob@example.com',
+        // Create Teachers
+        User::create([
+            'name' => 'Ms. Emily Johnson',
+            'email' => 'emily.johnson@school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $teacherRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Alice Brown',
-            'email' => 'alice@example.com',
+        User::create([
+            'name' => 'Mr. David Smith',
+            'email' => 'david.smith@school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $teacherRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Charlie Wilson',
-            'email' => 'charlie@example.com',
+        User::create([
+            'name' => 'Mrs. Lisa Brown',
+            'email' => 'lisa.brown@school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $teacherRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Diana Davis',
-            'email' => 'diana@example.com',
+        User::create([
+            'name' => 'Mr. Robert Wilson',
+            'email' => 'robert.wilson@school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $teacherRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Edward Miller',
-            'email' => 'edward@example.com',
+        // Create Parents
+        User::create([
+            'name' => 'Mrs. Jennifer Davis',
+            'email' => 'jennifer.davis@email.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $parentRole->id,
         ]);
 
-        // Create more users to demonstrate pagination
-        User::factory()->create([
-            'name' => 'Frank Garcia',
-            'email' => 'frank@example.com',
+        User::create([
+            'name' => 'Mr. Michael Garcia',
+            'email' => 'michael.garcia@email.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $parentRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Grace Lee',
-            'email' => 'grace@example.com',
+        User::create([
+            'name' => 'Mrs. Patricia Lee',
+            'email' => 'patricia.lee@email.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $parentRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Henry Taylor',
-            'email' => 'henry@example.com',
+        // Create Students
+        User::create([
+            'name' => 'Emma Johnson',
+            'email' => 'emma.johnson@student.school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $studentRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Ivy Chen',
-            'email' => 'ivy@example.com',
+        User::create([
+            'name' => 'Noah Smith',
+            'email' => 'noah.smith@student.school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $studentRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Jack Rodriguez',
-            'email' => 'jack@example.com',
+        User::create([
+            'name' => 'Olivia Brown',
+            'email' => 'olivia.brown@student.school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $studentRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Kelly Martinez',
-            'email' => 'kelly@example.com',
+        User::create([
+            'name' => 'Liam Wilson',
+            'email' => 'liam.wilson@student.school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $studentRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Liam Anderson',
-            'email' => 'liam@example.com',
+        User::create([
+            'name' => 'Sophia Davis',
+            'email' => 'sophia.davis@student.school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $studentRole->id,
+        ]);
+
+        User::create([
+            'name' => 'Mason Garcia',
+            'email' => 'mason.garcia@student.school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $studentRole->id,
+        ]);
+
+        User::create([
+            'name' => 'Isabella Lee',
+            'email' => 'isabella.lee@student.school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $studentRole->id,
+        ]);
+
+        User::create([
+            'name' => 'Ethan Martinez',
+            'email' => 'ethan.martinez@student.school.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $studentRole->id,
         ]);
     }
 }

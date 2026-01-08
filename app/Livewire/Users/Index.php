@@ -308,13 +308,20 @@ class Index extends Component
         $currentUserRole = $currentUser->role;
 
         return User::when($this->search, function ($query) {
-            return $query->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%');
+            return $query->where(function ($q) {
+                $q->where('name', 'like', '%' . $this->search . '%')
+                  ->orWhere('email', 'like', '%' . $this->search . '%');
+            });
         })->when($this->verificationFilter !== 'all', function ($query) {
             return $query->when($this->verificationFilter === 'verified', fn($q) => $q->whereNotNull('email_verified_at'))
                         ->when($this->verificationFilter === 'unverified', fn($q) => $q->whereNull('email_verified_at'));
         })->when($this->roleFilter !== 'all', function ($query) {
-            return $query->whereHas('role', fn($roleQuery) => $roleQuery->where('name', $this->roleFilter));
+            // Apply role filter but respect user's permissions
+            $allowedRoles = $this->getAllowedRoleFilters($currentUserRole);
+            if (in_array($this->roleFilter, $allowedRoles)) {
+                return $query->whereHas('role', fn($roleQuery) => $roleQuery->where('name', $this->roleFilter));
+            }
+            return $query;
         })->when($this->statusFilter !== 'all', function ($query) {
             // For now, active/inactive could be based on email_verified_at or other criteria
             // You can customize this logic based on your requirements
@@ -334,6 +341,37 @@ class Index extends Component
             // Admins can see all users
             return $query;
         });
+    }
+
+    private function getAllowedRoleFilters($currentUserRole)
+    {
+        if (!$currentUserRole) {
+            return [];
+        }
+
+        // Get role hierarchy configuration
+        $roleHierarchy = $this->getRoleHierarchy();
+
+        // Find current user's role in hierarchy
+        $currentRoleIndex = array_search($currentUserRole->name, array_keys($roleHierarchy));
+
+        if ($currentRoleIndex === false) {
+            return [];
+        }
+
+        // Return all roles at or below current user's hierarchy level
+        $allowedRoleNames = array_slice(array_keys($roleHierarchy), $currentRoleIndex);
+
+        return $allowedRoleNames;
+    }
+
+    private function getRoleHierarchy(): array
+    {
+        return config('roles.hierarchy', [
+            'user' => 1,      // Lowest level
+            'moderator' => 2, // Medium level
+            'admin' => 3,     // Highest level
+        ]);
     }
 
     private function getUsers()

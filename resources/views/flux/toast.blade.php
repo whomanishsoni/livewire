@@ -41,7 +41,7 @@
     x-transition:leave-end="opacity-0 transform translate-y-2"
     class="fixed bottom-4 right-4 z-50 max-w-sm"
 >
-    <div class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4">
+    <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg p-4">
         <div class="flex items-start">
             <div class="flex-1">
                 <h4 x-show="heading && heading.trim() !== ''" class="text-sm font-medium text-gray-900 dark:text-white" x-text="heading"></h4>

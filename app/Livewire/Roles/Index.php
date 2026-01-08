@@ -214,10 +214,13 @@ class Index extends Component
     public function updatedSelectAll()
     {
         if ($this->selectAll) {
+            $allowedRoles = $this->getAllowedRolesForCurrentUser();
             $currentPageRoles = Role::when($this->search, function ($query) {
-                return $query->where('name', 'like', '%' . $this->search . '%')
-                            ->orWhere('label', 'like', '%' . $this->search . '%');
-            })->paginate($this->perPage);
+                return $query->where(function ($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('label', 'like', '%' . $this->search . '%');
+                });
+            })->whereIn('name', $allowedRoles)->paginate($this->perPage);
 
             $this->selectedRoles = $currentPageRoles->pluck('id')->toArray();
         } else {
@@ -227,10 +230,13 @@ class Index extends Component
 
     public function updatedSelectedRoles()
     {
+        $allowedRoles = $this->getAllowedRolesForCurrentUser();
         $currentPageRoles = Role::when($this->search, function ($query) {
-            return $query->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('label', 'like', '%' . $this->search . '%');
-        })->paginate($this->perPage);
+            return $query->where(function ($q) {
+                $q->where('name', 'like', '%' . $this->search . '%')
+                  ->orWhere('label', 'like', '%' . $this->search . '%');
+            });
+        })->whereIn('name', $allowedRoles)->paginate($this->perPage);
 
         $totalCurrentPageRoles = $currentPageRoles->count();
         $this->selectAll = count($this->selectedRoles) === $totalCurrentPageRoles && $totalCurrentPageRoles > 0;
@@ -486,22 +492,49 @@ class Index extends Component
         return $groupedPermissions;
     }
 
-    public function render()
+    private function getAllowedRolesForCurrentUser()
     {
         $currentUser = auth()->user();
 
+        if (!$currentUser || !$currentUser->role) {
+            return [];
+        }
+
+        // Get role hierarchy configuration
+        $roleHierarchy = $this->getRoleHierarchy();
+
+        // Find current user's role in hierarchy
+        $currentRoleIndex = array_search($currentUser->role->name, array_keys($roleHierarchy));
+
+        if ($currentRoleIndex === false) {
+            return [];
+        }
+
+        // Return all roles at or below current user's hierarchy level
+        $allowedRoleNames = array_slice(array_keys($roleHierarchy), $currentRoleIndex);
+
+        return $allowedRoleNames;
+    }
+
+    private function getRoleHierarchy(): array
+    {
+        return config('roles.hierarchy', [
+            'user' => 1,      // Lowest level
+            'moderator' => 2, // Medium level
+            'admin' => 3,     // Highest level
+        ]);
+    }
+
+    public function render()
+    {
+        $allowedRoles = $this->getAllowedRolesForCurrentUser();
+
         $roles = Role::with('permissions')->when($this->search, function ($query) {
-            return $query->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('label', 'like', '%' . $this->search . '%');
-        })->when($currentUser && $currentUser->role, function ($query) use ($currentUser) {
-            // Apply role-based filtering for roles management
-            if ($currentUser->role->name === 'moderator') {
-                // Moderators can see all roles except admin (they can see it but can't manage it)
-                return $query;
-            }
-            // Admins can see all roles
-            return $query;
-        })->paginate($this->perPage);
+            return $query->where(function ($q) {
+                $q->where('name', 'like', '%' . $this->search . '%')
+                  ->orWhere('label', 'like', '%' . $this->search . '%');
+            });
+        })->whereIn('name', $allowedRoles)->paginate($this->perPage);
 
         return view('livewire.roles.index', compact('roles'));
     }

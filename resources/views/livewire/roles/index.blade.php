@@ -38,28 +38,28 @@
                         <flux:checkbox wire:model.live="selectAll" />
                     </flux:table.column>
                 @endif
-                <flux:table.column>Name</flux:table.column>
-                <flux:table.column>Label</flux:table.column>
-                <flux:table.column>Color</flux:table.column>
-                <flux:table.column>Permissions</flux:table.column>
-                <flux:table.column>Users Count</flux:table.column>
-                <flux:table.column>Created At</flux:table.column>
+                <flux:table.column class="min-w-20">Name</flux:table.column>
+                <flux:table.column class="min-w-24">Label</flux:table.column>
+                <flux:table.column class="w-20">Color</flux:table.column>
+                <flux:table.column class="min-w-32">Permissions</flux:table.column>
+                <flux:table.column class="w-20">Users</flux:table.column>
+                <flux:table.column class="w-24">Created</flux:table.column>
                 @if(auth()->user()->hasPermission('edit_roles') || auth()->user()->hasPermission('delete_roles'))
-                    <flux:table.column class="w-12">Actions</flux:table.column>
+                    <flux:table.column class="w-16">Actions</flux:table.column>
                 @endif
             </flux:table.columns>
 
             <flux:table.rows>
                 @foreach ($roles as $role)
                     <flux:table.row>
-                        <flux:table.cell>
-                            @if(auth()->user()->hasPermission('delete_roles'))
+                        @if(auth()->user()->hasPermission('delete_roles'))
+                            <flux:table.cell>
                                 <flux:checkbox
                                     wire:model.live="selectedRoles"
                                     value="{{ $role->id }}"
                                 />
-                            @endif
-                        </flux:table.cell>
+                            </flux:table.cell>
+                        @endif
                         <flux:table.cell variant="strong">{{ $role->name }}</flux:table.cell>
                         <flux:table.cell>{{ $role->label }}</flux:table.cell>
                         <flux:table.cell>
@@ -125,7 +125,7 @@
         </flux:table>
 
         @if (count($selectedRoles) > 0)
-            <div class="mt-4 p-4 border border-white rounded-lg">
+            <div class="mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div class="text-sm text-gray-700 dark:text-gray-300">
                         {{ count($selectedRoles) }} role{{ count($selectedRoles) > 1 ? 's' : '' }} selected

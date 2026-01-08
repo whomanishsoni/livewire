@@ -70,7 +70,29 @@
                                 <flux:label>Role</flux:label>
                                 <flux:select wire:model.live="roleFilter">
                                     <option value="all">All Roles</option>
-                                    @foreach(\App\Models\Role::all() as $role)
+                                    @php
+                                        $currentUser = auth()->user();
+                                        $currentUserRole = $currentUser->role;
+                                        $allowedRoles = [];
+
+                                        if ($currentUserRole) {
+                                            // Get role hierarchy configuration
+                                            $roleHierarchy = config('roles.hierarchy', [
+                                                'user' => 1,      // Lowest level
+                                                'moderator' => 2, // Medium level
+                                                'admin' => 3,     // Highest level
+                                            ]);
+
+                                            // Find current user's role in hierarchy
+                                            $currentRoleIndex = array_search($currentUserRole->name, array_keys($roleHierarchy));
+
+                                            if ($currentRoleIndex !== false) {
+                                                // Return all roles at or below current user's hierarchy level
+                                                $allowedRoles = array_slice(array_keys($roleHierarchy), $currentRoleIndex);
+                                            }
+                                        }
+                                    @endphp
+                                    @foreach(\App\Models\Role::whereIn('name', $allowedRoles)->get() as $role)
                                         <option value="{{ $role->name }}">{{ $role->label }}</option>
                                     @endforeach
                                 </flux:select>
@@ -94,11 +116,11 @@
         </div>
         <flux:table>
             <flux:table.columns>
-                <flux:table.column class="w-12">
-                    @if(auth()->user()->hasPermission('delete_users'))
+                @if(auth()->user()->hasPermission('delete_users'))
+                    <flux:table.column class="w-12">
                         <flux:checkbox wire:model.live="selectAll" />
-                    @endif
-                </flux:table.column>
+                    </flux:table.column>
+                @endif
                 <flux:table.column>Name</flux:table.column>
                 <flux:table.column>Email</flux:table.column>
                 <flux:table.column>Email Verified</flux:table.column>
@@ -110,14 +132,14 @@
             <flux:table.rows>
                 @foreach ($users as $user)
                     <flux:table.row>
-                        <flux:table.cell>
-                            @if(auth()->user()->hasPermission('delete_users'))
+                        @if(auth()->user()->hasPermission('delete_users'))
+                            <flux:table.cell>
                                 <flux:checkbox
                                     wire:model.live="selectedUsers"
                                     value="{{ $user->id }}"
                                 />
-                            @endif
-                        </flux:table.cell>
+                            </flux:table.cell>
+                        @endif
                         <flux:table.cell variant="strong">{{ $user->name }}</flux:table.cell>
                         <flux:table.cell>{{ $user->email }}</flux:table.cell>
                         <flux:table.cell>
@@ -161,7 +183,7 @@
         </flux:table>
 
         @if (count($selectedUsers) > 0 && auth()->user()->hasPermission('delete_users'))
-            <div class="mt-4 p-4 border border-white rounded-lg">
+            <div class="mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div class="text-sm text-gray-700 dark:text-gray-300">
                         {{ count($selectedUsers) }} user{{ count($selectedUsers) > 1 ? 's' : '' }} selected
