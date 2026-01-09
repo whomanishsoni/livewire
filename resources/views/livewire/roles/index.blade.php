@@ -269,7 +269,7 @@
     </flux:modal>
 
     <!-- Permissions Modal -->
-    <flux:modal wire:model="showPermissionsModal" class="md:w-6xl">
+    <flux:modal wire:model="showPermissionsModal" class="md:w-5xl">
         <form wire:submit="updatePermissions" class="space-y-6">
             <!-- Header -->
             <div class="text-center">

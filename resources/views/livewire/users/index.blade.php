@@ -76,19 +76,33 @@
                                         $allowedRoles = [];
 
                                         if ($currentUserRole) {
-                                            // Get role hierarchy configuration
-                                            $roleHierarchy = config('roles.hierarchy', [
-                                                'user' => 1,      // Lowest level
-                                                'moderator' => 2, // Medium level
-                                                'admin' => 3,     // Highest level
-                                            ]);
+                                            // Super admin can see all roles
+                                            if ($currentUserRole->name === 'super_admin') {
+                                                $roleHierarchy = config('roles.hierarchy', [
+                                                    'student' => 1,
+                                                    'parent' => 2,
+                                                    'teacher' => 3,
+                                                    'admin' => 4,
+                                                    'super_admin' => 5,
+                                                ]);
+                                                $allowedRoles = array_keys($roleHierarchy);
+                                            } else {
+                                                // Get role hierarchy configuration
+                                                $roleHierarchy = config('roles.hierarchy', [
+                                                    'student' => 1,
+                                                    'parent' => 2,
+                                                    'teacher' => 3,
+                                                    'admin' => 4,
+                                                    'super_admin' => 5,
+                                                ]);
 
-                                            // Find current user's role in hierarchy
-                                            $currentRoleIndex = array_search($currentUserRole->name, array_keys($roleHierarchy));
+                                                // Find current user's role in hierarchy
+                                                $currentRoleIndex = array_search($currentUserRole->name, array_keys($roleHierarchy));
 
-                                            if ($currentRoleIndex !== false) {
-                                                // Return all roles at or below current user's hierarchy level
-                                                $allowedRoles = array_slice(array_keys($roleHierarchy), $currentRoleIndex);
+                                                if ($currentRoleIndex !== false) {
+                                                    // Return all roles at or below current user's hierarchy level
+                                                    $allowedRoles = array_slice(array_keys($roleHierarchy), $currentRoleIndex);
+                                                }
                                             }
                                         }
                                     @endphp

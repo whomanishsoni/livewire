@@ -4,31 +4,39 @@ namespace App\Livewire\Roles;
 
 use App\Models\Permission;
 use App\Models\Role;
+use Flux;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Flux;
 
 class Index extends Component
 {
     use WithPagination;
 
     public $search = '';
+
     public $perPage = 10;
 
     // Selection properties
     public $selectAll = false;
+
     public $selectedRoles = [];
 
     // Create modal properties
     public $createName = '';
+
     public $createLabel = '';
+
     public $createColor = 'gray';
+
     public $createSelectedPermissions = [];
 
     // Edit modal properties
     public $editingRole = null;
+
     public $editName = '';
+
     public $editLabel = '';
+
     public $editColor = 'gray';
 
     // Delete confirmation
@@ -36,19 +44,30 @@ class Index extends Component
 
     // Modal state
     public $showCreateModal = false;
+
     public $showEditModal = false;
+
     public $showDeleteModal = false;
+
     public $showPermissionsModal = false;
+
     public $editingPermissionsRole = null;
+
     public $availablePermissions = [];
+
     public $selectedPermissions = [];
 
     // Permission select all properties
     public $selectAllView = false;
+
     public $selectAllCreate = false;
+
     public $selectAllEdit = false;
+
     public $selectAllDelete = false;
+
     public $selectAllModule = false;
+
     public $moduleSelectAll = [];
 
     public function updatingSearch()
@@ -63,7 +82,7 @@ class Index extends Component
 
     public function create()
     {
-        if (!auth()->user()->hasPermission('create_roles')) {
+        if (! auth()->user()->hasPermission('create_roles')) {
             abort(403, 'Unauthorized');
         }
 
@@ -79,7 +98,7 @@ class Index extends Component
         $this->validate([
             'createName' => 'required|string|max:255|unique:roles,name',
             'createLabel' => 'required|string|max:255',
-            'createColor' => 'required|string|in:' . implode(',', array_keys(Role::availableColors())),
+            'createColor' => 'required|string|in:'.implode(',', array_keys(Role::availableColors())),
         ]);
 
         $role = Role::create([
@@ -89,7 +108,7 @@ class Index extends Component
         ]);
 
         // Sync permissions if any were selected
-        if (!empty($this->createSelectedPermissions)) {
+        if (! empty($this->createSelectedPermissions)) {
             $role->syncPermissions($this->createSelectedPermissions);
         }
 
@@ -108,7 +127,7 @@ class Index extends Component
 
     public function edit($roleId)
     {
-        if (!auth()->user()->hasPermission('edit_roles')) {
+        if (! auth()->user()->hasPermission('edit_roles')) {
             abort(403, 'Unauthorized');
         }
 
@@ -131,9 +150,9 @@ class Index extends Component
     public function updateRole()
     {
         $this->validate([
-            'editName' => 'required|string|max:255|unique:roles,name,' . $this->editingRole->id,
+            'editName' => 'required|string|max:255|unique:roles,name,'.$this->editingRole->id,
             'editLabel' => 'required|string|max:255',
-            'editColor' => 'required|string|in:' . implode(',', array_keys(Role::availableColors())),
+            'editColor' => 'required|string|in:'.implode(',', array_keys(Role::availableColors())),
         ]);
 
         $this->editingRole->update([
@@ -184,7 +203,7 @@ class Index extends Component
 
     public function bulkDelete()
     {
-        if (!auth()->user()->hasPermission('delete_roles')) {
+        if (! auth()->user()->hasPermission('delete_roles')) {
             abort(403, 'Unauthorized');
         }
 
@@ -205,7 +224,7 @@ class Index extends Component
 
             Flux::toast(
                 heading: 'Roles deleted',
-                text: "{$deletedCount} role" . ($deletedCount > 1 ? 's' : '') . ' have been successfully deleted.',
+                text: "{$deletedCount} role".($deletedCount > 1 ? 's' : '').' have been successfully deleted.',
                 duration: 3000
             );
         }
@@ -217,8 +236,8 @@ class Index extends Component
             $allowedRoles = $this->getAllowedRolesForCurrentUser();
             $currentPageRoles = Role::when($this->search, function ($query) {
                 return $query->where(function ($q) {
-                    $q->where('name', 'like', '%' . $this->search . '%')
-                      ->orWhere('label', 'like', '%' . $this->search . '%');
+                    $q->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('label', 'like', '%'.$this->search.'%');
                 });
             })->whereIn('name', $allowedRoles)->paginate($this->perPage);
 
@@ -233,8 +252,8 @@ class Index extends Component
         $allowedRoles = $this->getAllowedRolesForCurrentUser();
         $currentPageRoles = Role::when($this->search, function ($query) {
             return $query->where(function ($q) {
-                $q->where('name', 'like', '%' . $this->search . '%')
-                  ->orWhere('label', 'like', '%' . $this->search . '%');
+                $q->where('name', 'like', '%'.$this->search.'%')
+                    ->orWhere('label', 'like', '%'.$this->search.'%');
             });
         })->whereIn('name', $allowedRoles)->paginate($this->perPage);
 
@@ -244,7 +263,7 @@ class Index extends Component
 
     public function showPermissions($roleId)
     {
-        if (!auth()->user()->hasPermission('edit_roles')) {
+        if (! auth()->user()->hasPermission('edit_roles')) {
             abort(403, 'Unauthorized');
         }
 
@@ -258,6 +277,20 @@ class Index extends Component
 
             $this->editingPermissionsRole = $role;
             $this->availablePermissions = $this->getAvailablePermissions();
+
+            // Debug: Check permissions loading
+            $totalPermissionsInDB = Permission::count();
+            $rolePermissionsCount = $role->permissions ? $role->permissions->count() : 0;
+            $availablePermissionsCount = count($this->availablePermissions);
+
+            \Log::info("Permissions Debug - Role: {$role->name}", [
+                'total_permissions_in_db' => $totalPermissionsInDB,
+                'role_permissions_count' => $rolePermissionsCount,
+                'available_permissions_modules' => $availablePermissionsCount,
+                'role_permissions' => $role->permissions ? $role->permissions->pluck('name')->toArray() : [],
+                'selected_permission_ids' => $role->permissions ? $role->permissions->pluck('id')->toArray() : [],
+            ]);
+
             $this->selectedPermissions = $role->permissions ? $role->permissions->pluck('id')->toArray() : [];
 
             $this->showPermissionsModal = true;
@@ -457,11 +490,11 @@ class Index extends Component
         }
 
         // Update bulk checkbox states
-        $this->selectAllView = !empty($viewPermissions) && empty(array_diff($viewPermissions, $this->selectedPermissions));
-        $this->selectAllCreate = !empty($createPermissions) && empty(array_diff($createPermissions, $this->selectedPermissions));
-        $this->selectAllEdit = !empty($editPermissions) && empty(array_diff($editPermissions, $this->selectedPermissions));
-        $this->selectAllDelete = !empty($deletePermissions) && empty(array_diff($deletePermissions, $this->selectedPermissions));
-        $this->selectAllModule = !empty($allPermissions) && empty(array_diff($allPermissions, $this->selectedPermissions));
+        $this->selectAllView = ! empty($viewPermissions) && empty(array_diff($viewPermissions, $this->selectedPermissions));
+        $this->selectAllCreate = ! empty($createPermissions) && empty(array_diff($createPermissions, $this->selectedPermissions));
+        $this->selectAllEdit = ! empty($editPermissions) && empty(array_diff($editPermissions, $this->selectedPermissions));
+        $this->selectAllDelete = ! empty($deletePermissions) && empty(array_diff($deletePermissions, $this->selectedPermissions));
+        $this->selectAllModule = ! empty($allPermissions) && empty(array_diff($allPermissions, $this->selectedPermissions));
     }
 
     public function updatedModuleSelectAll()
@@ -472,11 +505,29 @@ class Index extends Component
     private function getAvailablePermissions(): array
     {
         $permissions = Permission::orderBy('module')->orderBy('name')->get();
+
+        // Direct check for the missing modules
+        $schoolsPerms = Permission::where('module', 'schools')->get();
+        $subscriptionsPerms = Permission::where('module', 'subscriptions')->get();
+        $subscriptionPlansPerms = Permission::where('module', 'subscription_plans')->get();
+
+        // Debug: Log exactly what's missing (don't echo to avoid JSON errors)
+        \Log::info('PERMISSIONS DEBUG', [
+            'total_permissions_in_db' => Permission::count(),
+            'schools_permissions_found' => $schoolsPerms->count(),
+            'schools_perm_names' => $schoolsPerms->count() > 0 ? $schoolsPerms->pluck('name')->toArray() : [],
+            'subscriptions_permissions_found' => $subscriptionsPerms->count(),
+            'subscriptions_perm_names' => $subscriptionsPerms->count() > 0 ? $subscriptionsPerms->pluck('name')->toArray() : [],
+            'subscription_plans_permissions_found' => $subscriptionPlansPerms->count(),
+            'subscription_plans_perm_names' => $subscriptionPlansPerms->count() > 0 ? $subscriptionPlansPerms->pluck('name')->toArray() : [],
+            'all_unique_modules' => Permission::distinct('module')->pluck('module')->toArray(),
+        ]);
+
         $groupedPermissions = [];
 
         foreach ($permissions as $permission) {
             $module = $permission->module;
-            if (!isset($groupedPermissions[$module])) {
+            if (! isset($groupedPermissions[$module])) {
                 $groupedPermissions[$module] = [
                     'title' => ucfirst($module),
                     'permissions' => [],
@@ -497,7 +548,7 @@ class Index extends Component
         $currentUser = auth()->user();
 
         // If no user or no role, return empty
-        if (!$currentUser || !$currentUser->role) {
+        if (! $currentUser || ! $currentUser->role) {
             return [];
         }
 
@@ -549,8 +600,8 @@ class Index extends Component
 
         $roles = Role::with('permissions')->when($this->search, function ($query) {
             return $query->where(function ($q) {
-                $q->where('name', 'like', '%' . $this->search . '%')
-                  ->orWhere('label', 'like', '%' . $this->search . '%');
+                $q->where('name', 'like', '%'.$this->search.'%')
+                    ->orWhere('label', 'like', '%'.$this->search.'%');
             });
         })->whereIn('name', $allowedRoles)->paginate($this->perPage);
 

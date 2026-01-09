@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Services\PermissionService;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class PermissionSeeder extends Seeder
@@ -18,6 +17,23 @@ class PermissionSeeder extends Seeder
             // Standard CRUD modules
             'users' => 'crud',
             'roles' => 'crud',
+            'schools' => 'crud',
+            'subscriptions' => 'crud',
+            'subscription_plans' => 'crud',
+            'modules' => 'crud',
+            'plan_modules' => 'crud',
+
+            // School management modules (from ModuleSeeder)
+            'students' => 'crud',
+            'teachers' => 'crud',
+            'classes' => 'crud',
+            'subjects' => 'crud',
+            'exams' => 'crud',
+            'attendance' => 'crud',
+            'finance' => 'crud',
+            'library' => 'crud',
+            'transport' => 'crud',
+            'hostel' => 'crud',
 
             // Custom modules with specific permissions
             'dashboard' => [

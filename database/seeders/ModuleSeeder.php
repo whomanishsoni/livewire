@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class ModuleSeeder extends Seeder
@@ -12,13 +11,18 @@ class ModuleSeeder extends Seeder
      */
     public function run(): void
     {
+        // Truncate existing modules to start fresh
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        \App\Models\Module::query()->delete();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
         $modules = [
             [
                 'name' => 'students',
                 'slug' => 'students',
                 'label' => 'Student Management',
                 'description' => 'Manage student enrollment, profiles, and academic records',
-                'icon' => 'fas fa-user-graduate',
+                'icon' => 'user',
                 'route_prefix' => 'students',
                 'is_active' => true,
                 'sort_order' => 1,
@@ -28,7 +32,7 @@ class ModuleSeeder extends Seeder
                 'slug' => 'teachers',
                 'label' => 'Teacher Management',
                 'description' => 'Manage teacher profiles, assignments, and performance',
-                'icon' => 'fas fa-chalkboard-teacher',
+                'icon' => 'academic-cap',
                 'route_prefix' => 'teachers',
                 'is_active' => true,
                 'sort_order' => 2,
@@ -38,7 +42,7 @@ class ModuleSeeder extends Seeder
                 'slug' => 'classes',
                 'label' => 'Class Management',
                 'description' => 'Manage class schedules, assignments, and student groupings',
-                'icon' => 'fas fa-school',
+                'icon' => 'building-storefront',
                 'route_prefix' => 'classes',
                 'is_active' => true,
                 'sort_order' => 3,
@@ -48,7 +52,7 @@ class ModuleSeeder extends Seeder
                 'slug' => 'subjects',
                 'label' => 'Subject Management',
                 'description' => 'Manage curriculum subjects and course offerings',
-                'icon' => 'fas fa-book',
+                'icon' => 'book-open',
                 'route_prefix' => 'subjects',
                 'is_active' => true,
                 'sort_order' => 4,
@@ -58,7 +62,7 @@ class ModuleSeeder extends Seeder
                 'slug' => 'exams',
                 'label' => 'Examination Management',
                 'description' => 'Manage exams, grades, and academic assessments',
-                'icon' => 'fas fa-clipboard-check',
+                'icon' => 'clipboard-document-list',
                 'route_prefix' => 'exams',
                 'is_active' => true,
                 'sort_order' => 5,
@@ -68,7 +72,7 @@ class ModuleSeeder extends Seeder
                 'slug' => 'attendance',
                 'label' => 'Attendance Tracking',
                 'description' => 'Track student and teacher attendance records',
-                'icon' => 'fas fa-calendar-check',
+                'icon' => 'calendar',
                 'route_prefix' => 'attendance',
                 'is_active' => true,
                 'sort_order' => 6,
@@ -78,7 +82,7 @@ class ModuleSeeder extends Seeder
                 'slug' => 'finance',
                 'label' => 'Financial Management',
                 'description' => 'Manage fees, payments, and financial records',
-                'icon' => 'fas fa-money-bill-wave',
+                'icon' => 'banknotes',
                 'route_prefix' => 'finance',
                 'is_active' => true,
                 'sort_order' => 7,
@@ -88,7 +92,7 @@ class ModuleSeeder extends Seeder
                 'slug' => 'library',
                 'label' => 'Library Management',
                 'description' => 'Manage library resources and book circulation',
-                'icon' => 'fas fa-book-open',
+                'icon' => 'book-open',
                 'route_prefix' => 'library',
                 'is_active' => true,
                 'sort_order' => 8,
@@ -98,7 +102,7 @@ class ModuleSeeder extends Seeder
                 'slug' => 'transport',
                 'label' => 'Transport Management',
                 'description' => 'Manage school transportation and routes',
-                'icon' => 'fas fa-bus',
+                'icon' => 'truck',
                 'route_prefix' => 'transport',
                 'is_active' => true,
                 'sort_order' => 9,
@@ -108,7 +112,7 @@ class ModuleSeeder extends Seeder
                 'slug' => 'hostel',
                 'label' => 'Hostel Management',
                 'description' => 'Manage dormitory accommodations and residents',
-                'icon' => 'fas fa-home',
+                'icon' => 'home-modern',
                 'route_prefix' => 'hostel',
                 'is_active' => true,
                 'sort_order' => 10,
@@ -116,10 +120,13 @@ class ModuleSeeder extends Seeder
         ];
 
         foreach ($modules as $module) {
-            \App\Models\Module::firstOrCreate(
+            $created = \App\Models\Module::firstOrCreate(
                 ['slug' => $module['slug']],
                 $module
             );
+            echo "Created module: {$created->name} (ID: {$created->id})\n";
         }
+
+        echo 'Total modules created: '.\App\Models\Module::count()."\n";
     }
 }

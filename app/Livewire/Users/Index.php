@@ -4,9 +4,9 @@ namespace App\Livewire\Users;
 
 use App\Models\Role;
 use App\Models\User;
+use Flux;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Flux;
 
 class Index extends Component
 {
@@ -15,12 +15,16 @@ class Index extends Component
     public $paginators = [];
 
     public $search = '';
+
     public $perPage = 10;
+
     public $showFilters = false;
 
     // Separate filter properties
     public $verificationFilter = 'all'; // all, verified, unverified
+
     public $roleFilter = 'all'; // all, admin, moderator, user
+
     public $statusFilter = 'all'; // all, active, inactive
 
     // Legacy filter for backward compatibility (can be removed later)
@@ -28,30 +32,46 @@ class Index extends Component
 
     // Selection properties
     public $selectAll = false;
+
     public $selectedUsers = [];
 
     // Modal state
     public $showCreateModal = false;
+
     public $showEditModal = false;
+
     public $showDeleteModal = false;
 
     // Create modal properties
     public $createName = '';
+
     public $createEmail = '';
+
     public $createPassword = '';
+
     public $createPasswordConfirmation = '';
+
     public $createRoleId = '';
+
     public $showCreatePassword = false;
+
     public $showCreatePasswordConfirmation = false;
 
     // Edit modal properties
     public $editingUser = null;
+
     public $editName = '';
+
     public $editEmail = '';
+
     public $editPassword = '';
+
     public $editPasswordConfirmation = '';
+
     public $editRoleId = '';
+
     public $showEditPassword = false;
+
     public $showEditPasswordConfirmation = false;
 
     // Delete confirmation
@@ -94,7 +114,7 @@ class Index extends Component
 
     public function create()
     {
-        if (!auth()->user()->hasPermission('create_users')) {
+        if (! auth()->user()->hasPermission('create_users')) {
             abort(403, 'Unauthorized');
         }
 
@@ -141,7 +161,7 @@ class Index extends Component
 
     public function edit($userId)
     {
-        if (!auth()->user()->hasPermission('edit_users')) {
+        if (! auth()->user()->hasPermission('edit_users')) {
             abort(403, 'Unauthorized');
         }
 
@@ -166,7 +186,7 @@ class Index extends Component
     {
         $this->validate([
             'editName' => 'required|string|max:255',
-            'editEmail' => 'required|email|max:255|unique:users,email,' . $this->editingUser->id,
+            'editEmail' => 'required|email|max:255|unique:users,email,'.$this->editingUser->id,
             'editPassword' => 'nullable|string|min:8',
             'editPasswordConfirmation' => 'nullable|string|same:editPassword',
             'editRoleId' => 'nullable|exists:roles,id',
@@ -180,7 +200,7 @@ class Index extends Component
         ];
 
         // Only update password if it's provided
-        if (!empty($this->editPassword)) {
+        if (! empty($this->editPassword)) {
             $updateData['password'] = bcrypt($this->editPassword);
         }
 
@@ -203,7 +223,7 @@ class Index extends Component
 
     public function delete($userId)
     {
-        if (!auth()->user()->hasPermission('delete_users')) {
+        if (! auth()->user()->hasPermission('delete_users')) {
             abort(403, 'Unauthorized');
         }
 
@@ -224,7 +244,7 @@ class Index extends Component
     {
         if ($this->deletingUser) {
             // Double-check permissions before deletion
-            if (!auth()->user()->hasPermission('delete_users')) {
+            if (! auth()->user()->hasPermission('delete_users')) {
                 abort(403, 'Unauthorized');
             }
 
@@ -248,7 +268,7 @@ class Index extends Component
 
     public function bulkDelete()
     {
-        if (!auth()->user()->hasPermission('delete_users')) {
+        if (! auth()->user()->hasPermission('delete_users')) {
             abort(403, 'Unauthorized');
         }
 
@@ -273,7 +293,7 @@ class Index extends Component
 
             Flux::toast(
                 heading: 'Users deleted',
-                text: "{$deletedCount} user" . ($deletedCount > 1 ? 's' : '') . ' have been successfully deleted.',
+                text: "{$deletedCount} user".($deletedCount > 1 ? 's' : '').' have been successfully deleted.',
                 duration: 3000
             );
         }
@@ -309,24 +329,25 @@ class Index extends Component
 
         return User::when($this->search, function ($query) {
             return $query->where(function ($q) {
-                $q->where('name', 'like', '%' . $this->search . '%')
-                  ->orWhere('email', 'like', '%' . $this->search . '%');
+                $q->where('name', 'like', '%'.$this->search.'%')
+                    ->orWhere('email', 'like', '%'.$this->search.'%');
             });
         })->when($this->verificationFilter !== 'all', function ($query) {
-            return $query->when($this->verificationFilter === 'verified', fn($q) => $q->whereNotNull('email_verified_at'))
-                        ->when($this->verificationFilter === 'unverified', fn($q) => $q->whereNull('email_verified_at'));
-        })->when($this->roleFilter !== 'all', function ($query) {
+            return $query->when($this->verificationFilter === 'verified', fn ($q) => $q->whereNotNull('email_verified_at'))
+                ->when($this->verificationFilter === 'unverified', fn ($q) => $q->whereNull('email_verified_at'));
+        })->when($this->roleFilter !== 'all', function ($query) use ($currentUserRole) {
             // Apply role filter but respect user's permissions
             $allowedRoles = $this->getAllowedRoleFilters($currentUserRole);
             if (in_array($this->roleFilter, $allowedRoles)) {
-                return $query->whereHas('role', fn($roleQuery) => $roleQuery->where('name', $this->roleFilter));
+                return $query->whereHas('role', fn ($roleQuery) => $roleQuery->where('name', $this->roleFilter));
             }
+
             return $query;
         })->when($this->statusFilter !== 'all', function ($query) {
             // For now, active/inactive could be based on email_verified_at or other criteria
             // You can customize this logic based on your requirements
-            return $query->when($this->statusFilter === 'active', fn($q) => $q->whereNotNull('email_verified_at'))
-                        ->when($this->statusFilter === 'inactive', fn($q) => $q->whereNull('email_verified_at'));
+            return $query->when($this->statusFilter === 'active', fn ($q) => $q->whereNotNull('email_verified_at'))
+                ->when($this->statusFilter === 'inactive', fn ($q) => $q->whereNull('email_verified_at'));
         })->when($currentUserRole, function ($query) use ($currentUserRole) {
             // Apply role-based filtering
             if ($currentUserRole->name === 'moderator') {
@@ -338,6 +359,7 @@ class Index extends Component
                 // Regular users can only see themselves (though they shouldn't have view_users permission)
                 return $query->where('id', auth()->id());
             }
+
             // Admins can see all users
             return $query;
         });
@@ -345,8 +367,13 @@ class Index extends Component
 
     private function getAllowedRoleFilters($currentUserRole)
     {
-        if (!$currentUserRole) {
+        if (! $currentUserRole) {
             return [];
+        }
+
+        // Super admin can see all roles
+        if ($currentUserRole->name === 'super_admin') {
+            return array_keys($this->getRoleHierarchy());
         }
 
         // Get role hierarchy configuration

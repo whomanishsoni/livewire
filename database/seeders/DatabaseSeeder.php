@@ -13,8 +13,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed modules first (they create permissions automatically)
+        // Seed modules first (they create permissions automatically via boot method)
         $this->call(ModuleSeeder::class);
+
+        // Force commit to ensure permissions are available
+        \DB::commit();
 
         // Then seed subscription plans
         $this->call(SubscriptionPlanSeeder::class);
@@ -26,10 +29,20 @@ class DatabaseSeeder extends Seeder
         \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         \App\Models\Role::query()->delete();
         User::query()->delete();
+        // Also clear permission_role table to start fresh
+        \DB::table('permission_role')->truncate();
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // Seed permissions (for existing modules not covered by ModuleSeeder)
         $this->call(PermissionSeeder::class);
+
+        // Force commit again
+        \DB::commit();
+
+        // Debug: List all available permissions
+        $allPermissions = \App\Models\Permission::orderBy('name')->pluck('name')->toArray();
+        echo 'Available permissions: '.count($allPermissions)."\n";
+        echo 'Sample permissions: '.implode(', ', array_slice($allPermissions, 0, 10))."\n";
 
         // Then seed roles
         $this->call(RoleSeeder::class);
@@ -39,27 +52,6 @@ class DatabaseSeeder extends Seeder
 
         // Create users for each school
         $this->createSchoolUsers();
-    }
-
-    /**
-     * Create a global super admin user.
-     */
-    private function createSuperAdmin(): void
-    {
-        $superAdminRole = \App\Models\Role::where('name', 'super_admin')->first();
-
-        if ($superAdminRole) {
-            User::firstOrCreate(
-                ['email' => 'superadmin@schoolsaas.com'],
-                [
-                    'name' => 'Super Administrator',
-                    'email_verified_at' => now(),
-                    'password' => bcrypt('password'),
-                    'role_id' => $superAdminRole->id,
-                    'school_id' => null, // Global admin - no school context
-                ]
-            );
-        }
     }
 
     /**
@@ -84,8 +76,8 @@ class DatabaseSeeder extends Seeder
 
         // Create School Principal (highest school-level admin)
         User::create([
-            'name' => 'Dr. Sarah Principal - ' . $school->name,
-            'email' => 'principal@' . $domain . '.edu',
+            'name' => 'Dr. Sarah Principal - '.$school->name,
+            'email' => 'principal@'.$domain.'.edu',
             'email_verified_at' => now(),
             'password' => bcrypt('password'),
             'role_id' => $roles['admin']->id, // School-level admin
@@ -94,8 +86,8 @@ class DatabaseSeeder extends Seeder
 
         // Create School Administrators
         User::create([
-            'name' => 'Mr. John Deputy - ' . $school->name,
-            'email' => 'deputy@' . $domain . '.edu',
+            'name' => 'Mr. John Deputy - '.$school->name,
+            'email' => 'deputy@'.$domain.'.edu',
             'email_verified_at' => now(),
             'password' => bcrypt('password'),
             'role_id' => $roles['admin']->id,
@@ -103,8 +95,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::create([
-            'name' => 'Mrs. Mary Admin - ' . $school->name,
-            'email' => 'admin@' . $domain . '.edu',
+            'name' => 'Mrs. Mary Admin - '.$school->name,
+            'email' => 'admin@'.$domain.'.edu',
             'email_verified_at' => now(),
             'password' => bcrypt('password'),
             'role_id' => $roles['admin']->id,
@@ -121,8 +113,8 @@ class DatabaseSeeder extends Seeder
 
         foreach ($teachers as [$name, $emailPrefix]) {
             User::create([
-                'name' => $name . ' - ' . $school->name,
-                'email' => $emailPrefix . '@' . $domain . '.edu',
+                'name' => $name.' - '.$school->name,
+                'email' => $emailPrefix.'@'.$domain.'.edu',
                 'email_verified_at' => now(),
                 'password' => bcrypt('password'),
                 'role_id' => $roles['teacher']->id,
@@ -139,8 +131,8 @@ class DatabaseSeeder extends Seeder
 
         foreach ($parents as [$name, $emailPrefix]) {
             User::create([
-                'name' => $name . ' - ' . $school->name,
-                'email' => $emailPrefix . '@' . $domain . '.com',
+                'name' => $name.' - '.$school->name,
+                'email' => $emailPrefix.'@'.$domain.'.com',
                 'email_verified_at' => now(),
                 'password' => bcrypt('password'),
                 'role_id' => $roles['parent']->id,
@@ -162,8 +154,8 @@ class DatabaseSeeder extends Seeder
 
         foreach ($students as [$name, $emailPrefix]) {
             User::create([
-                'name' => $name . ' - ' . $school->name,
-                'email' => $emailPrefix . '@' . $domain . '.edu',
+                'name' => $name.' - '.$school->name,
+                'email' => $emailPrefix.'@'.$domain.'.edu',
                 'email_verified_at' => now(),
                 'password' => bcrypt('password'),
                 'role_id' => $roles['student']->id,

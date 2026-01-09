@@ -1,0 +1,22 @@
+<div>
+    <flux:breadcrumbs class="mb-6">
+        <flux:breadcrumbs.item href="/">Home</flux:breadcrumbs.item>
+        <flux:breadcrumbs.item>Classes</flux:breadcrumbs.item>
+    </flux:breadcrumbs>
+
+    <div class="flex justify-between items-center">
+        <flux:heading size="xl">{{ __('Class Management') }}</flux:heading>
+        @if(auth()->user()->hasPermission('create_classes'))
+            <flux:button variant="primary" icon="plus">
+                Create Class
+            </flux:button>
+        @endif
+    </div>
+
+    <div class="mt-6">
+        <flux:callout>
+            <flux:subheading>Coming Soon</flux:subheading>
+            <p>The Class Management module is under development. This feature will allow you to manage class schedules, assignments, and student groupings.</p>
+        </flux:callout>
+    </div>
+</div>
