@@ -12,10 +12,10 @@ Route::get('/', function () {
 })->name('home');
 
 Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'school.context'])
     ->name('dashboard');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'school.context'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
     Route::get('settings/profile', Profile::class)

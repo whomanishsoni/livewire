@@ -16,11 +16,35 @@
                     @if(auth()->user()->hasPermission('view_dashboard'))
                         <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                     @endif
-                    @if(auth()->user()->hasPermission('view_users'))
-                        <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>{{ __('Users') }}</flux:navlist.item>
-                    @endif
-                    @if(auth()->user()->hasPermission('view_roles'))
-                        <flux:navlist.item icon="user-group" :href="route('roles.index')" :current="request()->routeIs('roles.*')" wire:navigate>{{ __('Roles') }}</flux:navlist.item>
+
+                    @if(auth()->user()->school)
+                        @php
+                            $availableModules = auth()->user()->getAvailableModules();
+                        @endphp
+
+                        @foreach($availableModules as $module)
+                            @if(auth()->user()->hasPermission("view_{$module['slug']}"))
+                                <flux:navlist.item
+                                    icon="{{ $module['icon'] ?? 'cube' }}"
+                                    :href="$module['route_prefix'] ? route($module['route_prefix'] . '.index') : '#'"
+                                    :current="request()->routeIs($module['route_prefix'] . '.*')"
+                                    wire:navigate
+                                >
+                                    {{ $module['label'] }}
+                                </flux:navlist.item>
+                            @endif
+                        @endforeach
+                    @else
+                        {{-- Global admin navigation --}}
+                        @if(auth()->user()->hasPermission('view_users'))
+                            <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>{{ __('Users') }}</flux:navlist.item>
+                        @endif
+                        @if(auth()->user()->hasPermission('view_roles'))
+                            <flux:navlist.item icon="user-group" :href="route('roles.index')" :current="request()->routeIs('roles.*')" wire:navigate>{{ __('Roles') }}</flux:navlist.item>
+                        @endif
+                        {{-- Add subscription management for super admin --}}
+                        {{-- <flux:navlist.item icon="credit-card" :href="route('subscriptions.index')" :current="request()->routeIs('subscriptions.*')" wire:navigate>{{ __('Subscriptions') }}</flux:navlist.item>
+                        <flux:navlist.item icon="building-office" :href="route('schools.index')" :current="request()->routeIs('schools.*')" wire:navigate>{{ __('Schools') }}</flux:navlist.item> --}}
                     @endif
                 </flux:navlist.group>
             </flux:navlist>

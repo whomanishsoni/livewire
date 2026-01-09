@@ -138,4 +138,124 @@ class PermissionService
             }
         }
     }
+
+    /**
+     * Check if a user has permission in their school context.
+     * This considers both role permissions and school module access.
+     *
+     * @param \App\Models\User $user
+     * @param string $permission
+     * @return bool
+     */
+    public static function userHasPermissionInSchoolContext($user, string $permission): bool
+    {
+        // First check if user has the permission via their role
+        if (!$user->role?->hasPermission($permission)) {
+            return false;
+        }
+
+        // If user has school context, check if their school has access to the module
+        if ($user->school_id) {
+            $module = self::extractModuleFromPermission($permission);
+            if ($module && !$user->school->hasModule($module)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get permissions available to a user in their school context.
+     *
+     * @param \App\Models\User $user
+     * @return array
+     */
+    public static function getUserPermissionsInSchoolContext($user): array
+    {
+        $rolePermissions = $user->role?->getPermissionNames() ?? [];
+
+        if (!$user->school_id) {
+            return $rolePermissions;
+        }
+
+        $availableModules = $user->school->getAvailableModules()->pluck('name')->toArray();
+
+        return array_filter($rolePermissions, function ($permission) use ($availableModules) {
+            $module = self::extractModuleFromPermission($permission);
+            return !$module || in_array($module, $availableModules);
+        });
+    }
+
+    /**
+     * Get modules that a user can access based on their school subscription.
+     *
+     * @param \App\Models\User $user
+     * @return array
+     */
+    public static function getUserAccessibleModules($user): array
+    {
+        if (!$user->school) {
+            return [];
+        }
+
+        return $user->school->getAvailableModules()->pluck('slug')->toArray();
+    }
+
+    /**
+     * Check if a module is accessible to a user's school.
+     *
+     * @param \App\Models\User $user
+     * @param string $moduleSlug
+     * @return bool
+     */
+    public static function canUserAccessModule($user, string $moduleSlug): bool
+    {
+        if (!$user->school) {
+            return false;
+        }
+
+        return $user->school->hasModule($moduleSlug);
+    }
+
+    /**
+     * Extract module name from permission string.
+     * e.g., "view_users" -> "users", "create_students" -> "students"
+     *
+     * @param string $permission
+     * @return string|null
+     */
+    public static function extractModuleFromPermission(string $permission): ?string
+    {
+        // Remove common prefixes
+        $module = preg_replace('/^(view_|create_|edit_|delete_|manage_)/', '', $permission);
+
+        // If it's a known module, return it
+        if (\App\Models\Module::where('name', $module)->exists()) {
+            return $module;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get permissions grouped by module for school context.
+     * Only includes modules that the user's school has access to.
+     *
+     * @param \App\Models\User $user
+     * @return array
+     */
+    public static function getPermissionsGroupedByModuleForUser($user): array
+    {
+        $allPermissions = self::getAllPermissionsGrouped();
+        $accessibleModules = self::getUserAccessibleModules($user);
+
+        if (empty($accessibleModules)) {
+            return [];
+        }
+
+        return array_filter($allPermissions, function ($module) use ($accessibleModules) {
+            return in_array($module, $accessibleModules);
+        }, ARRAY_FILTER_USE_KEY);
+    }
 }

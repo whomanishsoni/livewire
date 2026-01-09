@@ -496,32 +496,50 @@ class Index extends Component
     {
         $currentUser = auth()->user();
 
+        // If no user or no role, return empty
         if (!$currentUser || !$currentUser->role) {
             return [];
         }
 
-        // Get role hierarchy configuration
-        $roleHierarchy = $this->getRoleHierarchy();
+        $userRole = $currentUser->role->name;
 
-        // Find current user's role in hierarchy
-        $currentRoleIndex = array_search($currentUser->role->name, array_keys($roleHierarchy));
-
-        if ($currentRoleIndex === false) {
-            return [];
+        // Super admin can see ALL roles - return all role names from database
+        if ($userRole === 'super_admin') {
+            return Role::pluck('name')->toArray();
         }
 
-        // Return all roles at or below current user's hierarchy level
-        $allowedRoleNames = array_slice(array_keys($roleHierarchy), $currentRoleIndex);
+        // For school admins, return roles they can manage
+        if ($userRole === 'admin') {
+            return ['student', 'parent', 'teacher', 'admin'];
+        }
 
-        return $allowedRoleNames;
+        // For teachers, return roles they can manage
+        if ($userRole === 'teacher') {
+            return ['student', 'parent', 'teacher'];
+        }
+
+        // For parents, return roles they can see
+        if ($userRole === 'parent') {
+            return ['student', 'parent'];
+        }
+
+        // For students, only their own role
+        if ($userRole === 'student') {
+            return ['student'];
+        }
+
+        // Default fallback - return empty array
+        return [];
     }
 
     private function getRoleHierarchy(): array
     {
         return config('roles.hierarchy', [
-            'user' => 1,      // Lowest level
-            'moderator' => 2, // Medium level
-            'admin' => 3,     // Highest level
+            'student' => 1,   // Lowest level
+            'parent' => 2,    // Parent level
+            'teacher' => 3,   // Teacher level
+            'admin' => 4,     // School admin level
+            'super_admin' => 5, // Global admin - highest level
         ]);
     }
 

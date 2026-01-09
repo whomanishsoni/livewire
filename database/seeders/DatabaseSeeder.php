@@ -13,172 +13,162 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seed modules first (they create permissions automatically)
+        $this->call(ModuleSeeder::class);
+
+        // Then seed subscription plans
+        $this->call(SubscriptionPlanSeeder::class);
+
+        // Then seed schools
+        $this->call(SchoolSeeder::class);
+
         // Truncate tables in correct order (due to foreign key constraints)
         \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         \App\Models\Role::query()->delete();
         User::query()->delete();
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // Seed permissions first
+        // Seed permissions (for existing modules not covered by ModuleSeeder)
         $this->call(PermissionSeeder::class);
 
         // Then seed roles
         $this->call(RoleSeeder::class);
 
-        // Get role IDs for assignment
-        $superAdminRole = \App\Models\Role::where('name', 'super_admin')->first();
-        $adminRole = \App\Models\Role::where('name', 'admin')->first();
-        $teacherRole = \App\Models\Role::where('name', 'teacher')->first();
-        $parentRole = \App\Models\Role::where('name', 'parent')->first();
-        $studentRole = \App\Models\Role::where('name', 'student')->first();
+        // Create global super admin
+        $this->createSuperAdmin();
 
-        // Create Super Admin (Principal)
+        // Create users for each school
+        $this->createSchoolUsers();
+    }
+
+    /**
+     * Create a global super admin user.
+     */
+    private function createSuperAdmin(): void
+    {
+        $superAdminRole = \App\Models\Role::where('name', 'super_admin')->first();
+
+        if ($superAdminRole) {
+            User::firstOrCreate(
+                ['email' => 'superadmin@schoolsaas.com'],
+                [
+                    'name' => 'Super Administrator',
+                    'email_verified_at' => now(),
+                    'password' => bcrypt('password'),
+                    'role_id' => $superAdminRole->id,
+                    'school_id' => null, // Global admin - no school context
+                ]
+            );
+        }
+    }
+
+    /**
+     * Create users for each seeded school.
+     */
+    private function createSchoolUsers(): void
+    {
+        $schools = \App\Models\School::all();
+        $roles = \App\Models\Role::all()->keyBy('name');
+
+        foreach ($schools as $school) {
+            $this->createUsersForSchool($school, $roles);
+        }
+    }
+
+    /**
+     * Create users for a specific school.
+     */
+    private function createUsersForSchool(\App\Models\School $school, $roles): void
+    {
+        $domain = $school->domain ?? 'default';
+
+        // Create School Principal (highest school-level admin)
         User::create([
-            'name' => 'Dr. Sarah Principal',
-            'email' => 'principal@school.com',
+            'name' => 'Dr. Sarah Principal - ' . $school->name,
+            'email' => 'principal@' . $domain . '.edu',
             'email_verified_at' => now(),
             'password' => bcrypt('password'),
-            'role_id' => $superAdminRole->id,
+            'role_id' => $roles['admin']->id, // School-level admin
+            'school_id' => $school->id,
         ]);
 
         // Create School Administrators
         User::create([
-            'name' => 'Mr. John Deputy',
-            'email' => 'deputy@school.com',
+            'name' => 'Mr. John Deputy - ' . $school->name,
+            'email' => 'deputy@' . $domain . '.edu',
             'email_verified_at' => now(),
             'password' => bcrypt('password'),
-            'role_id' => $adminRole->id,
+            'role_id' => $roles['admin']->id,
+            'school_id' => $school->id,
         ]);
 
         User::create([
-            'name' => 'Mrs. Mary Admin',
-            'email' => 'admin@school.com',
+            'name' => 'Mrs. Mary Admin - ' . $school->name,
+            'email' => 'admin@' . $domain . '.edu',
             'email_verified_at' => now(),
             'password' => bcrypt('password'),
-            'role_id' => $adminRole->id,
+            'role_id' => $roles['admin']->id,
+            'school_id' => $school->id,
         ]);
 
         // Create Teachers
-        User::create([
-            'name' => 'Ms. Emily Johnson',
-            'email' => 'emily.johnson@school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $teacherRole->id,
-        ]);
+        $teachers = [
+            ['Ms. Emily Johnson', 'emily.johnson'],
+            ['Mr. David Smith', 'david.smith'],
+            ['Mrs. Lisa Brown', 'lisa.brown'],
+            ['Mr. Robert Wilson', 'robert.wilson'],
+        ];
 
-        User::create([
-            'name' => 'Mr. David Smith',
-            'email' => 'david.smith@school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $teacherRole->id,
-        ]);
-
-        User::create([
-            'name' => 'Mrs. Lisa Brown',
-            'email' => 'lisa.brown@school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $teacherRole->id,
-        ]);
-
-        User::create([
-            'name' => 'Mr. Robert Wilson',
-            'email' => 'robert.wilson@school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $teacherRole->id,
-        ]);
+        foreach ($teachers as [$name, $emailPrefix]) {
+            User::create([
+                'name' => $name . ' - ' . $school->name,
+                'email' => $emailPrefix . '@' . $domain . '.edu',
+                'email_verified_at' => now(),
+                'password' => bcrypt('password'),
+                'role_id' => $roles['teacher']->id,
+                'school_id' => $school->id,
+            ]);
+        }
 
         // Create Parents
-        User::create([
-            'name' => 'Mrs. Jennifer Davis',
-            'email' => 'jennifer.davis@email.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $parentRole->id,
-        ]);
+        $parents = [
+            ['Mrs. Jennifer Davis', 'jennifer.davis'],
+            ['Mr. Michael Garcia', 'michael.garcia'],
+            ['Mrs. Patricia Lee', 'patricia.lee'],
+        ];
 
-        User::create([
-            'name' => 'Mr. Michael Garcia',
-            'email' => 'michael.garcia@email.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $parentRole->id,
-        ]);
-
-        User::create([
-            'name' => 'Mrs. Patricia Lee',
-            'email' => 'patricia.lee@email.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $parentRole->id,
-        ]);
+        foreach ($parents as [$name, $emailPrefix]) {
+            User::create([
+                'name' => $name . ' - ' . $school->name,
+                'email' => $emailPrefix . '@' . $domain . '.com',
+                'email_verified_at' => now(),
+                'password' => bcrypt('password'),
+                'role_id' => $roles['parent']->id,
+                'school_id' => $school->id,
+            ]);
+        }
 
         // Create Students
-        User::create([
-            'name' => 'Emma Johnson',
-            'email' => 'emma.johnson@student.school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $studentRole->id,
-        ]);
+        $students = [
+            ['Emma Johnson', 'emma.johnson'],
+            ['Noah Smith', 'noah.smith'],
+            ['Olivia Brown', 'olivia.brown'],
+            ['Liam Wilson', 'liam.wilson'],
+            ['Sophia Davis', 'sophia.davis'],
+            ['Mason Garcia', 'mason.garcia'],
+            ['Isabella Lee', 'isabella.lee'],
+            ['Ethan Martinez', 'ethan.martinez'],
+        ];
 
-        User::create([
-            'name' => 'Noah Smith',
-            'email' => 'noah.smith@student.school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $studentRole->id,
-        ]);
-
-        User::create([
-            'name' => 'Olivia Brown',
-            'email' => 'olivia.brown@student.school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $studentRole->id,
-        ]);
-
-        User::create([
-            'name' => 'Liam Wilson',
-            'email' => 'liam.wilson@student.school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $studentRole->id,
-        ]);
-
-        User::create([
-            'name' => 'Sophia Davis',
-            'email' => 'sophia.davis@student.school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $studentRole->id,
-        ]);
-
-        User::create([
-            'name' => 'Mason Garcia',
-            'email' => 'mason.garcia@student.school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $studentRole->id,
-        ]);
-
-        User::create([
-            'name' => 'Isabella Lee',
-            'email' => 'isabella.lee@student.school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $studentRole->id,
-        ]);
-
-        User::create([
-            'name' => 'Ethan Martinez',
-            'email' => 'ethan.martinez@student.school.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password'),
-            'role_id' => $studentRole->id,
-        ]);
+        foreach ($students as [$name, $emailPrefix]) {
+            User::create([
+                'name' => $name . ' - ' . $school->name,
+                'email' => $emailPrefix . '@' . $domain . '.edu',
+                'email_verified_at' => now(),
+                'password' => bcrypt('password'),
+                'role_id' => $roles['student']->id,
+                'school_id' => $school->id,
+            ]);
+        }
     }
 }

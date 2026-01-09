@@ -25,6 +25,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role_id',
+        'school_id',
     ];
 
     /**
@@ -73,11 +74,33 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's school.
+     */
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    /**
      * Check if the user has a specific permission.
+     * Enhanced to consider school context and module access.
      */
     public function hasPermission(string $permission): bool
     {
-        return $this->role?->hasPermission($permission) ?? false;
+        // First check if user has the permission via their role
+        if (!$this->role?->hasPermission($permission)) {
+            return false;
+        }
+
+        // If user has school context, check if their school has access to the module
+        if ($this->school_id) {
+            $module = $this->extractModuleFromPermission($permission);
+            if ($module && !$this->school->hasModule($module)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -86,5 +109,50 @@ class User extends Authenticatable
     public function hasRole(string $roleName): bool
     {
         return $this->role?->name === $roleName;
+    }
+
+    /**
+     * Check if the user belongs to a specific school.
+     */
+    public function belongsToSchool(int $schoolId): bool
+    {
+        return $this->school_id === $schoolId;
+    }
+
+    /**
+     * Get the available modules for this user's school.
+     */
+    public function getAvailableModules()
+    {
+        return $this->school?->getAvailableModules() ?? collect();
+    }
+
+    /**
+     * Check if the user can access a specific module.
+     */
+    public function canAccessModule(string $moduleSlug): bool
+    {
+        if (!$this->school) {
+            return false;
+        }
+
+        return $this->school->hasModule($moduleSlug);
+    }
+
+    /**
+     * Extract module name from permission string.
+     * e.g., "view_users" -> "users", "create_students" -> "students"
+     */
+    private function extractModuleFromPermission(string $permission): ?string
+    {
+        // Remove common prefixes
+        $module = preg_replace('/^(view_|create_|edit_|delete_|manage_)/', '', $permission);
+
+        // If it's a known module, return it
+        if (\App\Models\Module::where('name', $module)->exists()) {
+            return $module;
+        }
+
+        return null;
     }
 }

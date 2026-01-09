@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class School extends Model
+{
+    use HasFactory;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'domain',
+        'address',
+        'phone',
+        'email',
+        'description',
+        'logo',
+        'is_active',
+        'settings',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+            'settings' => 'array',
+        ];
+    }
+
+    /**
+     * Get the users that belong to this school.
+     */
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
+    /**
+     * Get the subscriptions for this school.
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * Get the active subscription for this school.
+     */
+    public function activeSubscription()
+    {
+        return $this->subscriptions()->where('status', 'active')->first();
+    }
+
+    /**
+     * Get the available modules for this school based on their active subscription.
+     */
+    public function getAvailableModules()
+    {
+        $subscription = $this->activeSubscription();
+
+        if (!$subscription) {
+            return collect();
+        }
+
+        return $subscription->plan->modules ?? collect();
+    }
+
+    /**
+     * Check if the school has access to a specific module.
+     */
+    public function hasModule(string $moduleSlug): bool
+    {
+        return $this->getAvailableModules()->contains('slug', $moduleSlug);
+    }
+
+    /**
+     * Get the school's domain URL for routing.
+     */
+    public function getDomainUrl(): ?string
+    {
+        return $this->domain ? "https://{$this->domain}.test" : null;
+    }
+
+    /**
+     * Get the school's setting value.
+     */
+    public function getSetting(string $key, $default = null)
+    {
+        return data_get($this->settings, $key, $default);
+    }
+
+    /**
+     * Set a school setting.
+     */
+    public function setSetting(string $key, $value): void
+    {
+        $settings = $this->settings ?? [];
+        data_set($settings, $key, $value);
+        $this->settings = $settings;
+        $this->save();
+    }
+}
