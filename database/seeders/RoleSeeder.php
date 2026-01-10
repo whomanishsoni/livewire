@@ -13,8 +13,9 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Clear existing roles and their permissions
-        \App\Models\Role::query()->delete();
+        // Ensure all permissions exist before assigning to roles
+        $allPermissions = Permission::all()->pluck('name')->toArray();
+        echo 'Total permissions available: '.count($allPermissions)."\n\n";
 
         $roles = [
             [
@@ -31,8 +32,6 @@ class RoleSeeder extends Seeder
                     'view_schools', 'create_schools', 'edit_schools', 'delete_schools',
                     'view_subscriptions', 'create_subscriptions', 'edit_subscriptions', 'delete_subscriptions',
                     'view_subscription_plans', 'create_subscription_plans', 'edit_subscription_plans', 'delete_subscription_plans',
-                    'view_modules', 'create_modules', 'edit_modules', 'delete_modules',
-                    'view_plan_modules', 'create_plan_modules', 'edit_plan_modules', 'delete_plan_modules',
 
                     // All school modules
                     'view_students', 'create_students', 'edit_students', 'delete_students',
@@ -133,7 +132,8 @@ class RoleSeeder extends Seeder
             $permissions = $roleData['permissions'];
             unset($roleData['permissions']);
 
-            $role = Role::firstOrCreate(
+            // Create or update role
+            $role = Role::updateOrCreate(
                 ['name' => $roleData['name']],
                 $roleData
             );
@@ -145,15 +145,17 @@ class RoleSeeder extends Seeder
             $existingPermissions = Permission::whereIn('name', $permissions)->pluck('name')->toArray();
             $missingPermissions = array_diff($permissions, $existingPermissions);
 
-            echo "Role: {$roleData['name']} - Requested: ".count($permissions).' permissions, Found: '.count($existingPermissions)." permissions\n";
+            echo "Role: {$roleData['label']} ({$roleData['name']})\n";
+            echo '  - Requested: '.count($permissions).' permissions, Found: '.count($existingPermissions)." permissions\n";
 
             if (! empty($missingPermissions)) {
                 // Log missing permissions for debugging
-                echo "Warning: Missing permissions for {$roleData['name']}: ".implode(', ', array_slice($missingPermissions, 0, 5)).(count($missingPermissions) > 5 ? '...' : '')."\n";
+                echo '  - WARNING: Missing permissions: '.implode(', ', array_slice($missingPermissions, 0, 10)).(count($missingPermissions) > 10 ? '...' : '')."\n";
             }
 
+            // Sync permissions to role
             $role->syncPermissions($permissionIds);
-            echo 'Assigned '.count($permissionIds)." permissions to role {$roleData['name']}\n\n";
+            echo '  - Assigned '.count($permissionIds)." permissions\n\n";
         }
     }
 }

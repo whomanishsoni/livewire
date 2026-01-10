@@ -17,6 +17,78 @@ class ModuleSeeder extends Seeder
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $modules = [
+            // System modules (required for sidebar)
+            [
+                'name' => 'dashboard',
+                'slug' => 'dashboard',
+                'label' => 'Dashboard',
+                'description' => 'Main dashboard and overview',
+                'icon' => 'home',
+                'route_prefix' => 'dashboard',
+                'is_active' => true,
+                'sort_order' => 0,
+            ],
+            [
+                'name' => 'users',
+                'slug' => 'users',
+                'label' => 'User Management',
+                'description' => 'Manage system users and accounts',
+                'icon' => 'users',
+                'route_prefix' => 'users',
+                'is_active' => true,
+                'sort_order' => 1,
+            ],
+            [
+                'name' => 'roles',
+                'slug' => 'roles',
+                'label' => 'Role Management',
+                'description' => 'Manage roles and permissions',
+                'icon' => 'shield-check',
+                'route_prefix' => 'roles',
+                'is_active' => true,
+                'sort_order' => 2,
+            ],
+            [
+                'name' => 'schools',
+                'slug' => 'schools',
+                'label' => 'School Management',
+                'description' => 'Manage schools and institutions',
+                'icon' => 'building-office',
+                'route_prefix' => 'schools',
+                'is_active' => true,
+                'sort_order' => 3,
+            ],
+            [
+                'name' => 'subscriptions',
+                'slug' => 'subscriptions',
+                'label' => 'Subscription Management',
+                'description' => 'Manage school subscriptions',
+                'icon' => 'credit-card',
+                'route_prefix' => 'subscriptions',
+                'is_active' => true,
+                'sort_order' => 4,
+            ],
+            [
+                'name' => 'subscription_plans',
+                'slug' => 'subscription-plans',
+                'label' => 'Subscription Plan Management',
+                'description' => 'Manage subscription plans and pricing',
+                'icon' => 'document-duplicate',
+                'route_prefix' => 'subscription_plans',
+                'is_active' => true,
+                'sort_order' => 5,
+            ],
+            [
+                'name' => 'settings',
+                'slug' => 'settings',
+                'label' => 'Settings',
+                'description' => 'System and user settings',
+                'icon' => 'cog-6-tooth',
+                'route_prefix' => 'settings',
+                'is_active' => true,
+                'sort_order' => 6,
+            ],
+            // School management modules
             [
                 'name' => 'students',
                 'slug' => 'students',
@@ -25,7 +97,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'user',
                 'route_prefix' => 'students',
                 'is_active' => true,
-                'sort_order' => 1,
+                'sort_order' => 10,
             ],
             [
                 'name' => 'teachers',
@@ -35,7 +107,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'academic-cap',
                 'route_prefix' => 'teachers',
                 'is_active' => true,
-                'sort_order' => 2,
+                'sort_order' => 11,
             ],
             [
                 'name' => 'classes',
@@ -45,7 +117,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'building-storefront',
                 'route_prefix' => 'classes',
                 'is_active' => true,
-                'sort_order' => 3,
+                'sort_order' => 12,
             ],
             [
                 'name' => 'subjects',
@@ -55,7 +127,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'book-open',
                 'route_prefix' => 'subjects',
                 'is_active' => true,
-                'sort_order' => 4,
+                'sort_order' => 13,
             ],
             [
                 'name' => 'exams',
@@ -65,7 +137,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'clipboard-document-list',
                 'route_prefix' => 'exams',
                 'is_active' => true,
-                'sort_order' => 5,
+                'sort_order' => 14,
             ],
             [
                 'name' => 'attendance',
@@ -75,7 +147,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'calendar',
                 'route_prefix' => 'attendance',
                 'is_active' => true,
-                'sort_order' => 6,
+                'sort_order' => 15,
             ],
             [
                 'name' => 'finance',
@@ -85,7 +157,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'banknotes',
                 'route_prefix' => 'finance',
                 'is_active' => true,
-                'sort_order' => 7,
+                'sort_order' => 16,
             ],
             [
                 'name' => 'library',
@@ -95,7 +167,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'book-open',
                 'route_prefix' => 'library',
                 'is_active' => true,
-                'sort_order' => 8,
+                'sort_order' => 17,
             ],
             [
                 'name' => 'transport',
@@ -105,7 +177,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'truck',
                 'route_prefix' => 'transport',
                 'is_active' => true,
-                'sort_order' => 9,
+                'sort_order' => 18,
             ],
             [
                 'name' => 'hostel',
@@ -115,7 +187,7 @@ class ModuleSeeder extends Seeder
                 'icon' => 'home-modern',
                 'route_prefix' => 'hostel',
                 'is_active' => true,
-                'sort_order' => 10,
+                'sort_order' => 19,
             ],
         ];
 

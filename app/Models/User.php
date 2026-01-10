@@ -88,14 +88,18 @@ class User extends Authenticatable
     public function hasPermission(string $permission): bool
     {
         // First check if user has the permission via their role
-        if (!$this->role?->hasPermission($permission)) {
+        if (! $this->role?->hasPermission($permission)) {
             return false;
         }
 
+        // System-level modules that don't require school subscription
+        $systemModules = ['dashboard', 'users', 'roles', 'schools', 'subscriptions', 'subscription_plans', 'settings'];
+
         // If user has school context, check if their school has access to the module
+        // But skip check for system-level modules
         if ($this->school_id) {
             $module = $this->extractModuleFromPermission($permission);
-            if ($module && !$this->school->hasModule($module)) {
+            if ($module && ! in_array($module, $systemModules) && ! $this->school->hasModule($module)) {
                 return false;
             }
         }
@@ -132,7 +136,7 @@ class User extends Authenticatable
      */
     public function canAccessModule(string $moduleSlug): bool
     {
-        if (!$this->school) {
+        if (! $this->school) {
             return false;
         }
 
@@ -162,7 +166,8 @@ class User extends Authenticatable
     public function generateAuthToken(): string
     {
         $token = \Illuminate\Support\Str::random(64);
-        \Cache::put('auth_token_' . $token, $this->id, now()->addMinutes(5));
+        \Cache::put('auth_token_'.$token, $this->id, now()->addMinutes(5));
+
         return $token;
     }
 
@@ -171,10 +176,11 @@ class User extends Authenticatable
      */
     public static function validateAuthToken(string $token): ?self
     {
-        $userId = \Cache::get('auth_token_' . $token);
+        $userId = \Cache::get('auth_token_'.$token);
 
         if ($userId) {
-            \Cache::forget('auth_token_' . $token);
+            \Cache::forget('auth_token_'.$token);
+
             return self::find($userId);
         }
 

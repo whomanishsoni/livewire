@@ -12,37 +12,49 @@ class PermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        // Register modules with their permissions using the PermissionService
-        $modules = [
-            // Standard CRUD modules
-            'users' => 'crud',
-            'roles' => 'crud',
-            'schools' => 'crud',
-            'subscriptions' => 'crud',
-            'subscription_plans' => 'crud',
-            'modules' => 'crud',
-            'plan_modules' => 'crud',
+        // Get all modules from the database (created by ModuleSeeder)
+        $modules = \App\Models\Module::orderBy('sort_order')->get();
 
-            // School management modules (from ModuleSeeder)
-            'students' => 'crud',
-            'teachers' => 'crud',
-            'classes' => 'crud',
-            'subjects' => 'crud',
-            'exams' => 'crud',
-            'attendance' => 'crud',
-            'finance' => 'crud',
-            'library' => 'crud',
-            'transport' => 'crud',
-            'hostel' => 'crud',
+        // First, remove old permissions that don't belong to any module
+        $validModuleNames = $modules->pluck('name')->toArray();
+        \App\Models\Permission::whereNotIn('module', $validModuleNames)->delete();
 
-            // Custom modules with specific permissions
-            'dashboard' => [
+        // Register permissions for each module based on the Module model
+        foreach ($modules as $module) {
+            // Skip dashboard and settings - they have custom permissions
+            if (in_array($module->name, ['dashboard', 'settings'])) {
+                continue;
+            }
+
+            // Register CRUD permissions for standard modules
+            PermissionService::registerCrudModule($module->name, $module->label);
+        }
+
+        // Register custom permissions for dashboard
+        $dashboardModule = \App\Models\Module::where('name', 'dashboard')->first();
+        if ($dashboardModule) {
+            // Remove CRUD permissions created by boot method and create only view_dashboard
+            \App\Models\Permission::where('module', 'dashboard')
+                ->whereNotIn('name', ['view_dashboard'])
+                ->delete();
+
+            PermissionService::registerModulePermissions('dashboard', [
                 'view_dashboard' => [
                     'label' => 'View Dashboard',
                     'description' => 'Can access the main dashboard',
                 ],
-            ],
-            'settings' => [
+            ]);
+        }
+
+        // Register custom permissions for settings
+        $settingsModule = \App\Models\Module::where('name', 'settings')->first();
+        if ($settingsModule) {
+            // Remove CRUD permissions created by boot method
+            \App\Models\Permission::where('module', 'settings')
+                ->whereNotIn('name', ['view_settings', 'edit_profile', 'change_password', 'manage_appearance', 'manage_two_factor'])
+                ->delete();
+
+            PermissionService::registerModulePermissions('settings', [
                 'view_settings' => [
                     'label' => 'View Settings',
                     'description' => 'Can access settings page',
@@ -63,11 +75,10 @@ class PermissionSeeder extends Seeder
                     'label' => 'Manage Two-Factor Auth',
                     'description' => 'Can manage two-factor authentication',
                 ],
-            ],
-        ];
+            ]);
+        }
 
-        // Use the PermissionService to register all modules
-        PermissionService::registerMultipleModules($modules);
+        echo 'Permissions regenerated for '.$modules->count()." modules\n";
 
         // Example of how to add a new module dynamically in the future:
         // PermissionService::registerCrudModule('products', 'Products');

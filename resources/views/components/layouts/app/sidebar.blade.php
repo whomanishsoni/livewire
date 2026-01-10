@@ -37,22 +37,48 @@
 
                         {{-- System Management --}}
                         <flux:navlist.group heading="System Management" class="mb-2">
-                            <flux:navlist.item icon="building-office" :href="route('schools.index')" :current="request()->routeIs('schools.*')" wire:navigate>{{ __('Schools') }}</flux:navlist.item>
-                            <flux:navlist.item icon="credit-card" :href="route('subscriptions.index')" :current="request()->routeIs('subscriptions.*')" wire:navigate>{{ __('Subscriptions') }}</flux:navlist.item>
-                            <flux:navlist.item icon="document-text" :href="route('subscription_plans.index')" :current="request()->routeIs('subscription_plans.*')" wire:navigate>{{ __('Subscription Plans') }}</flux:navlist.item>
+                            @if(auth()->user()->hasPermission('view_schools'))
+                                <flux:navlist.item icon="building-office" :href="route('schools.index')" :current="request()->routeIs('schools.*')" wire:navigate>{{ __('Schools') }}</flux:navlist.item>
+                            @endif
+                            @if(auth()->user()->hasPermission('view_subscriptions'))
+                                <flux:navlist.item icon="credit-card" :href="route('subscriptions.index')" :current="request()->routeIs('subscriptions.*')" wire:navigate>{{ __('Subscriptions') }}</flux:navlist.item>
+                            @endif
+                            @if(auth()->user()->hasPermission('view_subscription_plans'))
+                                <flux:navlist.item icon="document-text" :href="route('subscription_plans.index')" :current="request()->routeIs('subscription_plans.*')" wire:navigate>{{ __('Subscription Plans') }}</flux:navlist.item>
+                            @endif
                         </flux:navlist.group>
 
                         {{-- School Management Modules --}}
                         <flux:navlist.group heading="Modules" class="border-t border-gray-200 dark:border-gray-700 mt-4 pt-4">
                             @php
-                                $allModules = \App\Models\Module::active()->orderBy('sort_order')->get();
+                                // Exclude dashboard and settings from modules list (shown elsewhere)
+                                $excludedModules = ['dashboard', 'settings'];
+                                $allModules = \App\Models\Module::active()
+                                    ->whereNotIn('name', $excludedModules)
+                                    ->orderBy('sort_order')
+                                    ->get();
                             @endphp
                             @foreach($allModules as $module)
-                                @if(auth()->user()->hasPermission("view_{$module->slug}"))
+                                @if(auth()->user()->hasPermission("view_{$module->name}"))
+                                    @php
+                                        // Handle special route names
+                                        if ($module->name === 'subscription_plans') {
+                                            // Subscription plans route uses underscore not hyphen
+                                            $routeHref = route('subscription_plans.index');
+                                            $routePattern = 'subscription_plans.*';
+                                        } elseif ($module->route_prefix) {
+                                            // Standard route pattern: route_prefix.index
+                                            $routeHref = route($module->route_prefix . '.index');
+                                            $routePattern = $module->route_prefix . '.*';
+                                        } else {
+                                            $routeHref = '#';
+                                            $routePattern = null;
+                                        }
+                                    @endphp
                                     <flux:navlist.item
                                         icon="cube"
-                                        :href="$module->route_prefix ? route($module->route_prefix . '.index') : '#'"
-                                        :current="request()->routeIs($module->route_prefix . '.*')"
+                                        :href="$routeHref"
+                                        :current="$routePattern ? request()->routeIs($routePattern) : false"
                                         wire:navigate
                                     >
                                         {{ $module->label }}
@@ -64,10 +90,10 @@
                         {{-- Teacher specific modules --}}
                         @php
                             $teacherModules = ['students', 'classes', 'subjects', 'exams', 'attendance'];
-                            $modules = \App\Models\Module::active()->whereIn('slug', $teacherModules)->get();
+                            $modules = \App\Models\Module::active()->whereIn('name', $teacherModules)->get();
                         @endphp
                         @foreach($modules as $module)
-                            @if(auth()->user()->hasPermission("view_{$module->slug}"))
+                            @if(auth()->user()->hasPermission("view_{$module->name}"))
                                 <flux:navlist.item
                                     icon="cube"
                                     :href="$module->route_prefix ? route($module->route_prefix . '.index') : '#'"
