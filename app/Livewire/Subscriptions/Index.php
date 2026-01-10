@@ -63,7 +63,6 @@ class Index extends Component
 
     public $createStatus = 'active';
 
-    public $createMetadata = '';
 
     // Edit modal properties
     public $editingSubscription = null;
@@ -82,7 +81,6 @@ class Index extends Component
 
     public $editStatus = 'active';
 
-    public $editMetadata = '';
 
     // Delete confirmation
     public $deletingSubscription = null;
@@ -156,10 +154,7 @@ class Index extends Component
             'createPrice' => 'required|numeric|min:0',
             'createBillingPeriod' => 'required|in:monthly,yearly',
             'createStatus' => 'required|in:active,trial,expired,cancelled',
-            'createMetadata' => 'nullable|string',
         ]);
-
-        $metadata = $this->createMetadata ? json_decode($this->createMetadata, true) : [];
 
         Subscription::create([
             'school_id' => $this->createSchoolId,
@@ -169,7 +164,6 @@ class Index extends Component
             'price' => $this->createPrice,
             'billing_period' => $this->createBillingPeriod,
             'status' => $this->createStatus,
-            'metadata' => $metadata,
         ]);
 
         $this->resetCreateFields();
@@ -198,7 +192,6 @@ class Index extends Component
             $this->editPrice = $subscription->price;
             $this->editBillingPeriod = $subscription->billing_period;
             $this->editStatus = $subscription->status;
-            $this->editMetadata = $subscription->metadata ? json_encode($subscription->metadata, JSON_PRETTY_PRINT) : '';
             $this->showEditModal = true;
         }
     }
@@ -213,10 +206,7 @@ class Index extends Component
             'editPrice' => 'required|numeric|min:0',
             'editBillingPeriod' => 'required|in:monthly,yearly',
             'editStatus' => 'required|in:active,trial,expired,cancelled',
-            'editMetadata' => 'nullable|string',
         ]);
-
-        $metadata = $this->editMetadata ? json_decode($this->editMetadata, true) : [];
 
         $this->editingSubscription->update([
             'school_id' => $this->editSchoolId,
@@ -226,7 +216,6 @@ class Index extends Component
             'price' => $this->editPrice,
             'billing_period' => $this->editBillingPeriod,
             'status' => $this->editStatus,
-            'metadata' => $metadata,
         ]);
 
         $this->resetEditFields();
@@ -354,6 +343,9 @@ class Index extends Component
 
     private function buildSubscriptionQuery()
     {
+        $currentUser = auth()->user();
+        $currentUserRole = $currentUser->role;
+
         return Subscription::with(['school', 'plan'])
             ->when($this->search, function ($query) {
                 return $query->where(function ($q) {
@@ -372,6 +364,23 @@ class Index extends Component
             })
             ->when($this->billingFilter !== 'all', function ($query) {
                 return $query->where('billing_period', $this->billingFilter);
+            })
+            ->when($currentUserRole && $currentUserRole->name, function ($query) use ($currentUserRole, $currentUser) {
+                // Apply role-based filtering with school scoping
+                if ($currentUserRole->name === 'super_admin') {
+                    // Super admins can see all subscriptions (no school restriction)
+                    return $query;
+                } elseif ($currentUserRole->name === 'admin') {
+                    // School admins can only see subscriptions for their own school
+                    return $query->where('school_id', $currentUser->school_id);
+                } else {
+                    // Other roles cannot access subscription management
+                    return $query->whereRaw('1 = 0'); // Return no results
+                }
+            })
+            ->when(!$currentUserRole || !$currentUserRole->name, function ($query) {
+                // Users without roles cannot access subscription management
+                return $query->whereRaw('1 = 0'); // Return no results
             });
     }
 
@@ -384,7 +393,6 @@ class Index extends Component
         $this->createPrice = '';
         $this->createBillingPeriod = 'monthly';
         $this->createStatus = 'active';
-        $this->createMetadata = '';
     }
 
     private function resetEditFields()
@@ -397,7 +405,6 @@ class Index extends Component
         $this->editPrice = '';
         $this->editBillingPeriod = 'monthly';
         $this->editStatus = 'active';
-        $this->editMetadata = '';
     }
 
     public function render()

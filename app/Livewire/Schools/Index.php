@@ -292,6 +292,9 @@ class Index extends Component
 
     private function buildSchoolQuery()
     {
+        $currentUser = auth()->user();
+        $currentUserRole = $currentUser->role;
+
         return School::when($this->search, function ($query) {
             return $query->where(function ($q) {
                 $q->where('name', 'like', '%'.$this->search.'%')
@@ -301,6 +304,21 @@ class Index extends Component
         })->when($this->statusFilter !== 'all', function ($query) {
             return $query->when($this->statusFilter === 'active', fn ($q) => $q->where('is_active', true))
                 ->when($this->statusFilter === 'inactive', fn ($q) => $q->where('is_active', false));
+        })->when($currentUserRole && $currentUserRole->name, function ($query) use ($currentUserRole, $currentUser) {
+            // Apply role-based filtering with school scoping
+            if ($currentUserRole->name === 'super_admin') {
+                // Super admins can see all schools (no school restriction)
+                return $query;
+            } elseif ($currentUserRole->name === 'admin') {
+                // School admins can only see their own school
+                return $query->where('id', $currentUser->school_id);
+            } else {
+                // Other roles cannot access schools management
+                return $query->whereRaw('1 = 0'); // Return no results
+            }
+        })->when(!$currentUserRole || !$currentUserRole->name, function ($query) {
+            // Users without roles cannot access schools management
+            return $query->whereRaw('1 = 0'); // Return no results
         });
     }
 

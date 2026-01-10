@@ -83,8 +83,8 @@
                         <flux:table.cell>{{ $role->created_at->format('M j, Y') }}</flux:table.cell>
                         @if(auth()->user()->hasPermission('edit_roles') || auth()->user()->hasPermission('delete_roles'))
                             @php
-                                $canEditRole = auth()->user()->hasPermission('edit_roles') && !(auth()->user()->role->name === 'moderator' && $role->name === 'admin');
-                                $canDeleteRole = auth()->user()->hasPermission('delete_roles') && !(auth()->user()->role->name === 'moderator' && $role->name === 'admin');
+                                $canEditRole = auth()->user()->hasPermission('edit_roles') && !(auth()->user()->role && auth()->user()->role->name === 'moderator' && $role->name === 'admin');
+                                $canDeleteRole = auth()->user()->hasPermission('delete_roles') && !(auth()->user()->role && auth()->user()->role->name === 'moderator' && $role->name === 'admin');
                             @endphp
                             @if($canEditRole || $canDeleteRole)
                                 <flux:table.cell>
@@ -155,7 +155,7 @@
     </div>
 
     <!-- Create Role Modal -->
-    <flux:modal wire:model="showCreateModal" class="md:w-96">
+    <flux:modal wire:model="showCreateModal" class="md:w-[42rem]">
         <form wire:submit="createRole" class="space-y-6">
             <div>
                 <flux:heading size="lg">Create Role</flux:heading>
@@ -205,7 +205,7 @@
     </flux:modal>
 
     <!-- Edit Role Modal -->
-    <flux:modal wire:model="showEditModal" class="md:w-96">
+    <flux:modal wire:model="showEditModal" class="md:w-[42rem]">
         <form wire:submit="updateRole" class="space-y-6">
             <div>
                 <flux:heading size="lg">Edit Role</flux:heading>
@@ -248,7 +248,7 @@
     </flux:modal>
 
     <!-- Delete Role Modal -->
-    <flux:modal wire:model="showDeleteModal" class="md:w-96">
+    <flux:modal wire:model="showDeleteModal" class="md:w-[42rem]">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">Delete Role</flux:heading>

@@ -176,7 +176,7 @@
     </div>
 
     <!-- Create School Modal -->
-    <flux:modal wire:model="showCreateModal" class="md:w-96">
+    <flux:modal wire:model="showCreateModal" class="md:w-[42rem]">
         <form wire:submit="createSchool" class="space-y-6">
             <div>
                 <flux:heading size="lg">Create School</flux:heading>
@@ -228,17 +228,14 @@
                 placeholder="https://example.com/logo.png"
             />
 
-            <flux:field>
-                <flux:checkbox wire:model="createIsActive" />
-                <flux:label>Active</flux:label>
-            </flux:field>
-
-            <flux:textarea
-                wire:model="createSettings"
-                label="Settings (JSON - optional)"
-                placeholder='{"key": "value"}'
-                rows="3"
-            />
+            <flux:select
+                wire:model="createStatus"
+                label="Status"
+                required
+            >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </flux:select>
 
             <div class="flex justify-end space-x-2">
                 <flux:modal.close>
@@ -250,7 +247,7 @@
     </flux:modal>
 
     <!-- Edit School Modal -->
-    <flux:modal wire:model="showEditModal" class="md:w-96">
+    <flux:modal wire:model="showEditModal" class="md:w-[42rem]">
         <form wire:submit="updateSchool" class="space-y-6">
             <div>
                 <flux:heading size="lg">Edit School</flux:heading>
@@ -302,17 +299,14 @@
                 placeholder="https://example.com/logo.png"
             />
 
-            <flux:field>
-                <flux:checkbox wire:model="editIsActive" />
-                <flux:label>Active</flux:label>
-            </flux:field>
-
-            <flux:textarea
-                wire:model="editSettings"
-                label="Settings (JSON - optional)"
-                placeholder='{"key": "value"}'
-                rows="3"
-            />
+            <flux:select
+                wire:model="editStatus"
+                label="Status"
+                required
+            >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </flux:select>
 
             <div class="flex justify-end space-x-2">
                 <flux:modal.close>
@@ -324,7 +318,7 @@
     </flux:modal>
 
     <!-- Delete School Modal -->
-    <flux:modal wire:model="showDeleteModal" class="md:w-96">
+    <flux:modal wire:model="showDeleteModal" class="md:w-[42rem]">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">Delete School</flux:heading>

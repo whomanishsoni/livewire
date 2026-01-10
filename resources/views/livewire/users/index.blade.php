@@ -72,10 +72,10 @@
                                     <option value="all">All Roles</option>
                                     @php
                                         $currentUser = auth()->user();
-                                        $currentUserRole = $currentUser->role;
+                                        $currentUserRole = $currentUser->role ?? null;
                                         $allowedRoles = [];
 
-                                        if ($currentUserRole) {
+                                        if ($currentUserRole && $currentUserRole->name) {
                                             // Super admin can see all roles
                                             if ($currentUserRole->name === 'super_admin') {
                                                 $roleHierarchy = config('roles.hierarchy', [
@@ -101,7 +101,8 @@
 
                                                 if ($currentRoleIndex !== false) {
                                                     // Return all roles at or below current user's hierarchy level
-                                                    $allowedRoles = array_slice(array_keys($roleHierarchy), $currentRoleIndex);
+                                                    // array_slice from 0 to current index + 1 to get roles from lowest up to current level
+                                                    $allowedRoles = array_slice(array_keys($roleHierarchy), 0, $currentRoleIndex + 1);
                                                 }
                                             }
                                         }
@@ -227,7 +228,7 @@
     </div>
 
     <!-- Create User Modal -->
-    <flux:modal wire:model="showCreateModal" class="md:w-96">
+    <flux:modal wire:model="showCreateModal" class="md:w-[42rem]">
         <form wire:submit="createUser" class="space-y-6">
             <div>
                 <flux:heading size="lg">Create User</flux:heading>
@@ -302,7 +303,7 @@
     </flux:modal>
 
     <!-- Edit User Modal -->
-    <flux:modal wire:model="showEditModal" class="md:w-96">
+    <flux:modal wire:model="showEditModal" class="md:w-[42rem]">
         <form wire:submit="updateUser" class="space-y-6">
             <div>
                 <flux:heading size="lg">Edit User</flux:heading>
@@ -376,7 +377,7 @@
     </flux:modal>
 
     <!-- Delete User Modal -->
-    <flux:modal wire:model="showDeleteModal" class="md:w-96">
+    <flux:modal wire:model="showDeleteModal" class="md:w-[42rem]">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">Delete User</flux:heading>

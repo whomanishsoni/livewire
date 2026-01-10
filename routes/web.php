@@ -4,37 +4,75 @@ use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\TwoFactor;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
-Route::get('/', function () {
-    // Debug route to check permissions
-    if (request()->has('debug_permissions')) {
-        $permissions = \App\Models\Permission::all();
-        $schools = \App\Models\Permission::where('module', 'schools')->get();
-        $subscriptions = \App\Models\Permission::where('module', 'subscriptions')->get();
-        $subscriptionPlans = \App\Models\Permission::where('module', 'subscription_plans')->get();
+// Main domain routes (for global admins and general access)
+Route::domain(config('app.url'))->group(function () {
+    Route::get('/', function () {
+        // Debug route to check permissions
+        if (request()->has('debug_permissions')) {
+            $permissions = \App\Models\Permission::all();
+            $schools = \App\Models\Permission::where('module', 'schools')->get();
+            $subscriptions = \App\Models\Permission::where('module', 'subscriptions')->get();
+            $subscriptionPlans = \App\Models\Permission::where('module', 'subscription_plans')->get();
 
-        return response()->json([
-            'total_permissions' => $permissions->count(),
-            'modules' => $permissions->pluck('module')->unique()->values(),
-            'schools_count' => $schools->count(),
-            'schools_names' => $schools->pluck('name'),
-            'subscriptions_count' => $subscriptions->count(),
-            'subscriptions_names' => $subscriptions->pluck('name'),
-            'subscription_plans_count' => $subscriptionPlans->count(),
-            'subscription_plans_names' => $subscriptionPlans->pluck('name'),
-        ]);
-    }
+            return response()->json([
+                'total_permissions' => $permissions->count(),
+                'modules' => $permissions->pluck('module')->unique()->values(),
+                'schools_count' => $schools->count(),
+                'schools_names' => $schools->pluck('name'),
+                'subscriptions_count' => $subscriptions->count(),
+                'subscriptions_names' => $subscriptions->pluck('name'),
+                'subscription_plans_count' => $subscriptionPlans->count(),
+                'subscription_plans_names' => $subscriptionPlans->pluck('name'),
+            ]);
+        }
 
-    return view('welcome');
-})->name('home');
+        return view('welcome');
+    })->name('home');
+});
 
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified', 'school.context'])
-    ->name('dashboard');
+// Subdomain routes for schools
+$baseDomain = parse_url(config('app.url'), PHP_URL_HOST) ?? 'localhost';
+if ($baseDomain === 'localhost' || filter_var($baseDomain, FILTER_VALIDATE_IP)) {
+    $baseDomain = 'livewire.test';
+}
 
-Route::middleware(['auth', 'school.context'])->group(function () {
+Route::domain('{subdomain}.' . $baseDomain)
+    ->middleware(['subdomain.context'])
+    ->group(function () {
+        Route::get('/', function () {
+            return view('welcome');
+        })->name('school.home');
+
+        // Token-based authentication for cross-domain login
+        Route::get('/auth/token', function (Request $request) {
+            $token = $request->query('token');
+
+            if (!$token) {
+                return redirect('/login');
+            }
+
+            $user = \App\Models\User::validateAuthToken($token);
+
+            if (!$user) {
+                return redirect('/login')->with('error', 'Invalid or expired authentication token.');
+            }
+
+            // Log the user in on this subdomain
+            \Illuminate\Support\Facades\Auth::login($user);
+
+            return redirect('/dashboard');
+        })->name('auth.token');
+    });
+
+// Routes that work on both main domain and subdomains
+Route::middleware(['auth', 'verified', 'school.context'])->group(function () {
+    Route::view('dashboard', 'dashboard')
+        ->name('dashboard');
+
     Route::redirect('settings', 'settings/profile');
 
     Route::get('settings/profile', Profile::class)

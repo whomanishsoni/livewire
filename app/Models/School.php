@@ -92,7 +92,22 @@ class School extends Model
      */
     public function getDomainUrl(): ?string
     {
-        return $this->domain ? "https://{$this->domain}.test" : null;
+        if (!$this->domain) {
+            return null;
+        }
+
+        $appUrl = config('app.url', 'http://localhost');
+        $parsedUrl = parse_url($appUrl);
+
+        // Extract the domain (remove protocol and path)
+        $baseDomain = $parsedUrl['host'] ?? 'localhost';
+
+        // If localhost or IP, use .test TLD for development
+        if ($baseDomain === 'localhost' || filter_var($baseDomain, FILTER_VALIDATE_IP)) {
+            $baseDomain = 'livewire.test';
+        }
+
+        return "https://{$this->domain}.{$baseDomain}";
     }
 
     /**

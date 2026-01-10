@@ -255,7 +255,7 @@
     </div>
 
     <!-- Create Subscription Modal -->
-    <flux:modal wire:model="showCreateModal" class="md:w-96">
+    <flux:modal wire:model="showCreateModal" class="md:w-[48rem]">
         <form wire:submit="createSubscription" class="space-y-6">
             <div>
                 <flux:heading size="lg">Create Subscription</flux:heading>
@@ -331,12 +331,7 @@
                 <option value="cancelled">Cancelled</option>
             </flux:select>
 
-            <flux:textarea
-                wire:model="createMetadata"
-                label="Metadata (JSON - optional)"
-                placeholder='{"notes": "Custom notes"}'
-                rows="3"
-            />
+
 
             <div class="flex justify-end space-x-2">
                 <flux:modal.close>
@@ -348,7 +343,7 @@
     </flux:modal>
 
     <!-- Edit Subscription Modal -->
-    <flux:modal wire:model="showEditModal" class="md:w-96">
+    <flux:modal wire:model="showEditModal" class="md:w-[42rem]">
         <form wire:submit="updateSubscription" class="space-y-6">
             <div>
                 <flux:heading size="lg">Edit Subscription</flux:heading>
@@ -422,12 +417,7 @@
                 <option value="cancelled" @if($editStatus == 'cancelled') selected @endif>Cancelled</option>
             </flux:select>
 
-            <flux:textarea
-                wire:model="editMetadata"
-                label="Metadata (JSON - optional)"
-                placeholder='{"notes": "Custom notes"}'
-                rows="3"
-            />
+
 
             <div class="flex justify-end space-x-2">
                 <flux:modal.close>
@@ -439,7 +429,7 @@
     </flux:modal>
 
     <!-- Delete Subscription Modal -->
-    <flux:modal wire:model="showDeleteModal" class="md:w-96">
+    <flux:modal wire:model="showDeleteModal" class="md:w-[42rem]">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">Delete Subscription</flux:heading>
@@ -458,3 +448,5 @@
         </div>
     </flux:modal>
 </div>
+            </div>
+        </div>

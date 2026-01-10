@@ -358,6 +358,9 @@ class Index extends Component
 
     private function buildPlanQuery()
     {
+        $currentUser = auth()->user();
+        $currentUserRole = $currentUser->role;
+
         return SubscriptionPlan::when($this->search, function ($query) {
             return $query->where(function ($q) {
                 $q->where('name', 'like', '%'.$this->search.'%')
@@ -369,6 +372,19 @@ class Index extends Component
                 ->when($this->statusFilter === 'inactive', fn ($q) => $q->where('is_active', false));
         })->when($this->billingFilter !== 'all', function ($query) {
             return $query->where('billing_period', $this->billingFilter);
+        })->when($currentUserRole && $currentUserRole->name, function ($query) use ($currentUserRole) {
+            // Apply role-based filtering - subscription plans are global but access is restricted by permissions
+            if ($currentUserRole->name === 'super_admin') {
+                // Super admins can see all plans
+                return $query;
+            } else {
+                // Other roles with subscription plan permissions can see all plans
+                // (plans are global, not school-specific)
+                return $query;
+            }
+        })->when(!$currentUserRole || !$currentUserRole->name, function ($query) {
+            // Users without roles cannot access subscription plan management
+            return $query->whereRaw('1 = 0'); // Return no results
         })->orderBy('sort_order')->orderBy('created_at', 'desc');
     }
 

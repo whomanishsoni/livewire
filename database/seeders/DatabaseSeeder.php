@@ -55,6 +55,23 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
+     * Create a global super admin user.
+     */
+    private function createSuperAdmin(): void
+    {
+        $superAdminRole = \App\Models\Role::where('name', 'super_admin')->first();
+
+        User::create([
+            'name' => 'Super Admin',
+            'email' => 'superadmin@example.com',
+            'email_verified_at' => now(),
+            'password' => bcrypt('password'),
+            'role_id' => $superAdminRole->id,
+            'school_id' => null, // Global admin, not tied to any school
+        ]);
+    }
+
+    /**
      * Create users for each seeded school.
      */
     private function createSchoolUsers(): void

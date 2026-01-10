@@ -12,8 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'auth' => \App\Http\Middleware\Authenticate::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'school.context' => \App\Http\Middleware\SchoolContext::class,
+            'subdomain.context' => \App\Http\Middleware\SubdomainContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

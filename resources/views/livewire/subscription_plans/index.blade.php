@@ -331,10 +331,14 @@
                 </div>
             </flux:field>
 
-            <flux:field>
-                <flux:checkbox wire:model="createIsActive" />
-                <flux:label>Active</flux:label>
-            </flux:field>
+            <flux:select
+                wire:model="createStatus"
+                label="Status"
+                required
+            >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </flux:select>
 
             <flux:field>
                 <flux:label>Modules</flux:label>
@@ -475,10 +479,14 @@
                 </div>
             </flux:field>
 
-            <flux:field>
-                <flux:checkbox wire:model="editIsActive" />
-                <flux:label>Active</flux:label>
-            </flux:field>
+            <flux:select
+                wire:model="editStatus"
+                label="Status"
+                required
+            >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </flux:select>
 
             <flux:field>
                 <flux:label>Modules</flux:label>

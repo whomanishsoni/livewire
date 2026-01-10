@@ -105,6 +105,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Login Redirect Path
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify the path where users will be redirected after
+    | successful login. This should be relative to handle subdomains properly.
+    |
+    */
+
+    'paths' => [
+        'login' => '/login',
+        'home' => '/dashboard',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Rate Limiting
     |--------------------------------------------------------------------------
     |

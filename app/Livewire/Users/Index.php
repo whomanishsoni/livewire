@@ -348,26 +348,57 @@ class Index extends Component
             // You can customize this logic based on your requirements
             return $query->when($this->statusFilter === 'active', fn ($q) => $q->whereNotNull('email_verified_at'))
                 ->when($this->statusFilter === 'inactive', fn ($q) => $q->whereNull('email_verified_at'));
-        })->when($currentUserRole, function ($query) use ($currentUserRole) {
-            // Apply role-based filtering
-            if ($currentUserRole->name === 'moderator') {
-                // Moderators can see users and moderators, but not admins
-                return $query->whereHas('role', function ($roleQuery) {
-                    $roleQuery->whereIn('name', ['user', 'moderator']);
-                });
-            } elseif ($currentUserRole->name === 'user') {
-                // Regular users can only see themselves (though they shouldn't have view_users permission)
-                return $query->where('id', auth()->id());
+        })->when($currentUserRole && $currentUserRole->name, function ($query) use ($currentUserRole, $currentUser) {
+            // Apply role-based filtering with school scoping
+            if ($currentUserRole->name === 'super_admin') {
+                // Super admins can see all users (no school restriction)
+                return $query;
+            } elseif ($currentUserRole->name === 'admin') {
+                // School admins can only see users within their own school
+                return $query->where('school_id', $currentUser->school_id);
+            } elseif ($currentUserRole->name === 'moderator') {
+                // Moderators can see users and moderators within their school, but not admins
+                return $query->where('school_id', $currentUser->school_id)
+                    ->whereHas('role', function ($roleQuery) {
+                        $roleQuery->whereIn('name', ['student', 'parent', 'teacher', 'moderator']);
+                    });
+            } elseif ($currentUserRole->name === 'teacher') {
+                // Teachers can see students and parents within their school
+                return $query->where('school_id', $currentUser->school_id)
+                    ->whereHas('role', function ($roleQuery) {
+                        $roleQuery->whereIn('name', ['student', 'parent']);
+                    });
+            } elseif ($currentUserRole->name === 'parent') {
+                // Parents can only see their own children (for now, simplified to see all students in school)
+                return $query->where('school_id', $currentUser->school_id)
+                    ->whereHas('role', function ($roleQuery) {
+                        $roleQuery->where('name', 'student');
+                    });
+            } elseif ($currentUserRole->name === 'student') {
+                // Students can only see themselves
+                return $query->where('id', $currentUser->id);
             }
 
-            // Admins can see all users
+            // Default fallback - restrict to user's school if they have one
+            if ($currentUser->school_id) {
+                return $query->where('school_id', $currentUser->school_id);
+            }
+
             return $query;
+        })->when(!$currentUserRole || !$currentUserRole->name, function ($query) use ($currentUser) {
+            // Handle users without roles - restrict to their school if they have one
+            if ($currentUser->school_id) {
+                return $query->where('school_id', $currentUser->school_id);
+            }
+
+            // Users without roles and without school can only see themselves
+            return $query->where('id', $currentUser->id);
         });
     }
 
     private function getAllowedRoleFilters($currentUserRole)
     {
-        if (! $currentUserRole) {
+        if (! $currentUserRole || ! $currentUserRole->name) {
             return [];
         }
 
@@ -395,9 +426,11 @@ class Index extends Component
     private function getRoleHierarchy(): array
     {
         return config('roles.hierarchy', [
-            'user' => 1,      // Lowest level
-            'moderator' => 2, // Medium level
-            'admin' => 3,     // Highest level
+            'student' => 1,   // Lowest level
+            'parent' => 2,    // Parents
+            'teacher' => 3,   // Teaching staff
+            'admin' => 4,     // School administrators
+            'super_admin' => 5, // Highest level - system administrators
         ]);
     }
 

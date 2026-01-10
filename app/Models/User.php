@@ -155,4 +155,29 @@ class User extends Authenticatable
 
         return null;
     }
+
+    /**
+     * Generate a temporary authentication token for cross-domain login.
+     */
+    public function generateAuthToken(): string
+    {
+        $token = \Illuminate\Support\Str::random(64);
+        \Cache::put('auth_token_' . $token, $this->id, now()->addMinutes(5));
+        return $token;
+    }
+
+    /**
+     * Validate and consume an authentication token.
+     */
+    public static function validateAuthToken(string $token): ?self
+    {
+        $userId = \Cache::get('auth_token_' . $token);
+
+        if ($userId) {
+            \Cache::forget('auth_token_' . $token);
+            return self::find($userId);
+        }
+
+        return null;
+    }
 }
