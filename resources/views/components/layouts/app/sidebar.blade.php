@@ -64,7 +64,7 @@
                         {{-- Teacher specific modules --}}
                         @php
                             $teacherModules = ['students', 'classes', 'subjects', 'exams', 'attendance'];
-                            $modules = \App\Models\Module::whereIn('slug', $teacherModules)->active()->orderBy('sort_order')->get();
+                            $modules = \App\Models\Module::active()->whereIn('slug', $teacherModules)->get();
                         @endphp
                         @foreach($modules as $module)
                             @if(auth()->user()->hasPermission("view_{$module->slug}"))
