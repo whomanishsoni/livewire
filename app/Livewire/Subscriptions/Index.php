@@ -88,14 +88,16 @@ class Index extends Component
     public function mount()
     {
         // Check URL parameters for pre-filtering
-        $this->schoolId = request()->get('school_id');
-        $this->planId = request()->get('plan_id');
+        $this->schoolId = request()->query('school_id');
+        $this->planId = request()->query('plan_id');
 
         if ($this->schoolId) {
             $this->schoolFilter = $this->schoolId;
+            $this->showFilters = true; // Automatically show filters if one is applied
         }
         if ($this->planId) {
             $this->planFilter = $this->planId;
+            $this->showFilters = true;
         }
     }
 

@@ -120,7 +120,7 @@
 
                                 <flux:menu>
                                     @if(auth()->user()->hasPermission('edit_schools'))
-                                        <flux:menu.item wire:click="edit({{ $school->id }})">
+                                        <flux:menu.item wire:click="edit('{{ $school->id }}')">
                                             <flux:icon name="pencil" class="size-4 me-2" />
                                             Edit
                                         </flux:menu.item>
@@ -132,7 +132,7 @@
                                         </flux:menu.item>
                                     @endif
                                     @if(auth()->user()->hasPermission('delete_schools'))
-                                        <flux:menu.item wire:click="delete({{ $school->id }})" class="text-red-600 dark:text-red-400">
+                                        <flux:menu.item wire:click="delete('{{ $school->id }}')" class="text-red-600 dark:text-red-400">
                                             <flux:icon name="trash" class="size-4 me-2" />
                                             Delete
                                         </flux:menu.item>

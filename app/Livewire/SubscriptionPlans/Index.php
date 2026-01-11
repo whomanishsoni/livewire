@@ -97,6 +97,21 @@ class Index extends Component
     // Modules modal
     public $modulesPlan = null;
 
+    public $planId = null;
+
+    public function mount()
+    {
+        // Check URL parameters for pre-filtering
+        $this->planId = request()->query('plan_id');
+
+        if ($this->planId) {
+            $plan = SubscriptionPlan::find($this->planId);
+            if ($plan) {
+                $this->search = $plan->name;
+            }
+        }
+    }
+
     public function updatingSearch()
     {
         $this->paginators['page'] = 1;

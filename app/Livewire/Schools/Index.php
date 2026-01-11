@@ -77,6 +77,24 @@ class Index extends Component
     // Delete confirmation
     public $deletingSchool = null;
 
+    public $schoolId = null;
+
+    public function mount()
+    {
+        // Check URL parameters for pre-filtering
+        $this->schoolId = request()->query('school_id');
+
+        if ($this->schoolId) {
+            // If a specific school is requested, we can filter by ID
+            // Since we don't have a direct ID filter in the UI (only search),
+            // we can either add one or just use the ID to find the school and set the search
+            $school = School::find($this->schoolId);
+            if ($school) {
+                $this->search = $school->name;
+            }
+        }
+    }
+
     public function updatingSearch()
     {
         $this->paginators['page'] = 1;
@@ -169,7 +187,7 @@ class Index extends Component
             $this->editEmail = $school->email;
             $this->editDescription = $school->description;
             $this->editLogo = $school->logo;
-            $this->editIsActive = $school->is_active;
+            $this->editIsActive = (bool) $school->is_active; // Cast to bool for checkbox
             $this->editSettings = $school->settings ? json_encode($school->settings, JSON_PRETTY_PRINT) : '';
             $this->showEditModal = true;
         }
@@ -298,7 +316,6 @@ class Index extends Component
         return School::when($this->search, function ($query) {
             return $query->where(function ($q) {
                 $q->where('name', 'like', '%'.$this->search.'%')
-                    ->orWhere('domain', 'like', '%'.$this->search.'%')
                     ->orWhere('email', 'like', '%'.$this->search.'%');
             });
         })->when($this->statusFilter !== 'all', function ($query) {

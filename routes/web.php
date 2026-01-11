@@ -17,7 +17,7 @@ foreach (config('tenancy.central_domains') as $domain) {
             return view('welcome');
         })->name('home');
 
-        Route::middleware(['auth', 'verified'])->group(function () {
+        Route::middleware(['auth', 'verified', \App\Http\Middleware\RedirectSchoolUsers::class])->group(function () {
             Route::view('dashboard', 'dashboard')
                 ->name('dashboard');
 
