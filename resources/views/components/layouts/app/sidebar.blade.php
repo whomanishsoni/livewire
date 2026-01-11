@@ -17,15 +17,8 @@
                         <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                     @endif
 
-                    {{-- Show all menus for super admin and admin --}}
-                    @if(auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('admin'))
-                        {{-- Debug: Show user role and permissions --}}
-                        {{-- Current User: {{ auth()->user()->name }} ({{ auth()->user()->role->name ?? 'No Role' }}) --}}
-                        {{-- Has view_schools: {{ auth()->user()->hasPermission('view_schools') ? 'YES' : 'NO' }} --}}
-                        {{-- Has view_subscriptions: {{ auth()->user()->hasPermission('view_subscriptions') ? 'YES' : 'NO' }} --}}
-                        {{-- Has view_subscription_plans: {{ auth()->user()->hasPermission('view_subscription_plans') ? 'YES' : 'NO' }} --}}
-
-                        {{-- User Management --}}
+                    {{-- User Management - Show for super admin and admin if they have permissions --}}
+                    @if((auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('admin')) && (auth()->user()->hasPermission('view_users') || auth()->user()->hasPermission('view_roles')))
                         <flux:navlist.group heading="User Management" class="mb-2">
                             @if(auth()->user()->hasPermission('view_users'))
                                 <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>{{ __('Users') }}</flux:navlist.item>
@@ -34,8 +27,10 @@
                                 <flux:navlist.item icon="user-group" :href="route('roles.index')" :current="request()->routeIs('roles.*')" wire:navigate>{{ __('Roles') }}</flux:navlist.item>
                             @endif
                         </flux:navlist.group>
+                    @endif
 
-                        {{-- System Management --}}
+                    {{-- System Management - Show only for super admin --}}
+                    @if(auth()->user()->hasRole('super_admin'))
                         <flux:navlist.group heading="System Management" class="mb-2">
                             @if(auth()->user()->hasPermission('view_schools'))
                                 <flux:navlist.item icon="building-office" :href="route('schools.index')" :current="request()->routeIs('schools.*')" wire:navigate>{{ __('Schools') }}</flux:navlist.item>
@@ -47,12 +42,23 @@
                                 <flux:navlist.item icon="document-text" :href="route('subscription_plans.index')" :current="request()->routeIs('subscription_plans.*')" wire:navigate>{{ __('Subscription Plans') }}</flux:navlist.item>
                             @endif
                         </flux:navlist.group>
+                    @endif
 
-                        {{-- School Management Modules --}}
-                        <flux:navlist.group heading="Modules" class="border-t border-gray-200 dark:border-gray-700 mt-4 pt-4">
+                    {{-- School Management Modules - Show for super admin and admin --}}
+                    @if(auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('admin'))
+                        <flux:navlist.group heading="School Management" class="border-t border-gray-200 dark:border-gray-700 mt-4 pt-4">
                             @php
-                                // Exclude dashboard and settings from modules list (shown elsewhere)
-                                $excludedModules = ['dashboard', 'settings'];
+                                // Exclude dashboard, settings, and system management modules from School Management list
+                                // These are shown in their respective management sections (User Management, System Management)
+                                $excludedModules = [
+                                    'dashboard',
+                                    'settings',
+                                    'users',           // User Management
+                                    'roles',           // Role Management
+                                    'schools',         // School Management
+                                    'subscriptions',   // Subscription Management
+                                    'subscription_plans' // Subscription Plan Management
+                                ];
                                 $allModules = \App\Models\Module::active()
                                     ->whereNotIn('name', $excludedModules)
                                     ->orderBy('sort_order')
@@ -81,12 +87,14 @@
                                         :current="$routePattern ? request()->routeIs($routePattern) : false"
                                         wire:navigate
                                     >
-                                        {{ $module->label }}
+                                        {{ str_replace(' Management', '', $module->label) }}
                                     </flux:navlist.item>
                                 @endif
                             @endforeach
                         </flux:navlist.group>
-                    @elseif(auth()->user()->hasRole('teacher'))
+                    @endif
+
+                    @if(auth()->user()->hasRole('teacher'))
                         {{-- Teacher specific modules --}}
                         @php
                             $teacherModules = ['students', 'classes', 'subjects', 'exams', 'attendance'];
@@ -100,7 +108,7 @@
                                     :current="request()->routeIs($module->route_prefix . '.*')"
                                     wire:navigate
                                 >
-                                    {{ $module->label }}
+                                    {{ str_replace(' Management', '', $module->label) }}
                                 </flux:navlist.item>
                             @endif
                         @endforeach

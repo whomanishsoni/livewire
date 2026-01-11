@@ -504,24 +504,20 @@ class Index extends Component
 
     private function getAvailablePermissions(): array
     {
-        $permissions = Permission::orderBy('module')->orderBy('name')->get();
+        $currentUser = auth()->user();
 
-        // Direct check for the missing modules
-        $schoolsPerms = Permission::where('module', 'schools')->get();
-        $subscriptionsPerms = Permission::where('module', 'subscriptions')->get();
-        $subscriptionPlansPerms = Permission::where('module', 'subscription_plans')->get();
+        if (! $currentUser || ! $currentUser->role) {
+            return [];
+        }
 
-        // Debug: Log exactly what's missing (don't echo to avoid JSON errors)
-        \Log::info('PERMISSIONS DEBUG', [
-            'total_permissions_in_db' => Permission::count(),
-            'schools_permissions_found' => $schoolsPerms->count(),
-            'schools_perm_names' => $schoolsPerms->count() > 0 ? $schoolsPerms->pluck('name')->toArray() : [],
-            'subscriptions_permissions_found' => $subscriptionsPerms->count(),
-            'subscriptions_perm_names' => $subscriptionsPerms->count() > 0 ? $subscriptionsPerms->pluck('name')->toArray() : [],
-            'subscription_plans_permissions_found' => $subscriptionPlansPerms->count(),
-            'subscription_plans_perm_names' => $subscriptionPlansPerms->count() > 0 ? $subscriptionPlansPerms->pluck('name')->toArray() : [],
-            'all_unique_modules' => Permission::distinct('module')->pluck('module')->toArray(),
-        ]);
+        if ($currentUser->hasRole('super_admin')) {
+            $permissions = Permission::orderBy('module')->orderBy('name')->get();
+        } else {
+            $permissions = $currentUser->role->permissions()
+                ->orderBy('module')
+                ->orderBy('name')
+                ->get();
+        }
 
         $groupedPermissions = [];
 

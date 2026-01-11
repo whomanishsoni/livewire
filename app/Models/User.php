@@ -92,6 +92,11 @@ class User extends Authenticatable
             return false;
         }
 
+        // Super admin and admin roles bypass subscription checks - they have full access if they have role permissions
+        if ($this->hasRole('super_admin') || $this->hasRole('admin')) {
+            return true;
+        }
+
         // System-level modules that don't require school subscription
         $systemModules = ['dashboard', 'users', 'roles', 'schools', 'subscriptions', 'subscription_plans', 'settings'];
 
