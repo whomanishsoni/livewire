@@ -132,7 +132,7 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
-        $domain = $school->domain ?? 'default';
+        $domain = $school->domains->first()->domain ?? 'default';
 
         // Create School Principal (highest school-level admin)
         User::updateOrCreate(

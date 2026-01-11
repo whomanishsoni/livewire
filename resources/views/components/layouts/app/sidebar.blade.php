@@ -68,17 +68,24 @@
                                 @if(auth()->user()->hasPermission("view_{$module->name}"))
                                     @php
                                         // Handle special route names
+                                        $routeHref = '#';
+                                        $routePattern = null;
+                                        $routeName = null;
+
                                         if ($module->name === 'subscription_plans') {
-                                            // Subscription plans route uses underscore not hyphen
-                                            $routeHref = route('subscription_plans.index');
+                                            $routeName = 'subscription_plans.index';
                                             $routePattern = 'subscription_plans.*';
                                         } elseif ($module->route_prefix) {
-                                            // Standard route pattern: route_prefix.index
-                                            $routeHref = route($module->route_prefix . '.index');
+                                            $routeName = $module->route_prefix . '.index';
                                             $routePattern = $module->route_prefix . '.*';
+                                        }
+
+                                        // Only show if route exists
+                                        if ($routeName && Route::has($routeName)) {
+                                            $routeHref = route($routeName);
                                         } else {
-                                            $routeHref = '#';
-                                            $routePattern = null;
+                                            // Skip this module if route doesn't exist (e.g. tenant route on central domain)
+                                            continue;
                                         }
                                     @endphp
                                     <flux:navlist.item
@@ -102,9 +109,15 @@
                         @endphp
                         @foreach($modules as $module)
                             @if(auth()->user()->hasPermission("view_{$module->name}"))
+                                @php
+                                    $routeName = $module->route_prefix ? $module->route_prefix . '.index' : null;
+                                    if (!$routeName || !Route::has($routeName)) {
+                                        continue;
+                                    }
+                                @endphp
                                 <flux:navlist.item
                                     icon="cube"
-                                    :href="$module->route_prefix ? route($module->route_prefix . '.index') : '#'"
+                                    :href="route($routeName)"
                                     :current="request()->routeIs($module->route_prefix . '.*')"
                                     wire:navigate
                                 >

@@ -10,10 +10,21 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
+
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class, 'school_id');
+    }
+
+    public function tenant()
+    {
+        return $this->school();
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -73,13 +84,7 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
-    /**
-     * Get the user's school.
-     */
-    public function school(): BelongsTo
-    {
-        return $this->belongsTo(School::class);
-    }
+    // school() relationship is handled by BelongsToTenant trait alias
 
     /**
      * Check if the user has a specific permission.
@@ -123,7 +128,7 @@ class User extends Authenticatable
     /**
      * Check if the user belongs to a specific school.
      */
-    public function belongsToSchool(int $schoolId): bool
+    public function belongsToSchool($schoolId): bool
     {
         return $this->school_id === $schoolId;
     }
@@ -170,10 +175,12 @@ class User extends Authenticatable
      */
     public function generateAuthToken(): string
     {
-        $token = \Illuminate\Support\Str::random(64);
-        \Cache::put('auth_token_'.$token, $this->id, now()->addMinutes(5));
+        $data = [
+            'user_id' => $this->id,
+            'expires_at' => now()->addMinutes(5)->timestamp,
+        ];
 
-        return $token;
+        return \Illuminate\Support\Facades\Crypt::encryptString(json_encode($data));
     }
 
     /**
@@ -181,14 +188,21 @@ class User extends Authenticatable
      */
     public static function validateAuthToken(string $token): ?self
     {
-        $userId = \Cache::get('auth_token_'.$token);
+        try {
+            $json = \Illuminate\Support\Facades\Crypt::decryptString($token);
+            $data = json_decode($json, true);
 
-        if ($userId) {
-            \Cache::forget('auth_token_'.$token);
+            if (! isset($data['user_id'], $data['expires_at'])) {
+                return null;
+            }
 
-            return self::find($userId);
+            if (now()->timestamp > $data['expires_at']) {
+                return null;
+            }
+
+            return self::find($data['user_id']);
+        } catch (\Exception $e) {
+            return null;
         }
-
-        return null;
     }
 }

@@ -61,10 +61,16 @@ class SchoolSeeder extends Seeder
         ];
 
         foreach ($schools as $schoolData) {
-            $school = \App\Models\School::firstOrCreate(
-                ['domain' => $schoolData['domain']],
-                $schoolData
-            );
+            $domain = $schoolData['domain'];
+            unset($schoolData['domain']);
+
+            // Check if school exists by name (since domain is no longer on school table)
+            $school = \App\Models\School::where('name', $schoolData['name'])->first();
+
+            if (! $school) {
+                $school = \App\Models\School::create($schoolData);
+                $school->createDomain(['domain' => $domain]);
+            }
 
             // Subscribe each school to a plan (only if not already subscribed)
             $existingSubscription = $school->subscriptions()->where('status', 'active')->first();

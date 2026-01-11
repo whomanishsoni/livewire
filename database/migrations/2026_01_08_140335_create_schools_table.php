@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('schools', function (Blueprint $table) {
-            $table->id();
+            $table->string('id')->primary();
             $table->string('name');
-            $table->string('domain')->unique()->nullable(); // For subdomain routing
+            // Domain is handled by domains table
             $table->string('address')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('logo')->nullable(); // Path to logo file
             $table->boolean('is_active')->default(true);
             $table->json('settings')->nullable(); // For school-specific settings
+            $table->json('data')->nullable(); // For Stancl/Tenancy custom data
             $table->timestamps();
         });
     }

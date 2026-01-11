@@ -3,13 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
+use Stancl\Tenancy\Database\Concerns\HasDomains;
 
-class School extends Model
+class School extends BaseTenant
 {
-    use HasFactory;
+    use HasFactory, HasDomains;
+
+    protected $table = 'schools';
 
     /**
      * The attributes that are mass assignable.
@@ -18,7 +20,7 @@ class School extends Model
      */
     protected $fillable = [
         'name',
-        'domain',
+        // 'domain', // Handled by HasDomains
         'address',
         'phone',
         'email',
@@ -26,6 +28,7 @@ class School extends Model
         'logo',
         'is_active',
         'settings',
+        'data',
     ];
 
     /**
@@ -38,6 +41,22 @@ class School extends Model
         return [
             'is_active' => 'boolean',
             'settings' => 'array',
+            'data' => 'array',
+        ];
+    }
+
+    public static function getCustomColumns(): array
+    {
+        return [
+            'id',
+            'name',
+            'address',
+            'phone',
+            'email',
+            'description',
+            'logo',
+            'is_active',
+            'settings',
         ];
     }
 
@@ -92,22 +111,21 @@ class School extends Model
      */
     public function getDomainUrl(): ?string
     {
-        if (!$this->domain) {
+        $domain = $this->domains->first();
+        if (!$domain) {
             return null;
         }
 
         $appUrl = config('app.url', 'http://localhost');
         $parsedUrl = parse_url($appUrl);
-
-        // Extract the domain (remove protocol and path)
+        $scheme = $parsedUrl['scheme'] ?? 'http';
         $baseDomain = $parsedUrl['host'] ?? 'localhost';
 
-        // If localhost or IP, use .test TLD for development
         if ($baseDomain === 'localhost' || filter_var($baseDomain, FILTER_VALIDATE_IP)) {
             $baseDomain = 'livewire.test';
         }
 
-        return "https://{$this->domain}.{$baseDomain}";
+        return "{$scheme}://{$domain->domain}.{$baseDomain}";
     }
 
     /**
